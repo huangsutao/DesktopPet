@@ -14,12 +14,17 @@
     </None>
   </ItemGroup>
 
-  <!-- 方案 A：放入 third_party/spine-csharp 后自动引用 -->
-  <ItemGroup Condition="Exists('third_party\spine-csharp\spine-csharp.csproj')">
-    <ProjectReference Include="third_party\spine-csharp\spine-csharp.csproj" />
-  </ItemGroup>
+  <!-- 方案 B：官方 src 在 ThirdParty/SpineCSharp；WPF 只用 ColorOther，排除 Unity/MonoGame 专用文件 -->
   <ItemGroup>
-    <Folder Include="third_party\spine-csharp\" />
+    <Compile Remove="ThirdParty\SpineCSharp\ColorMono.cs" />
+    <Compile Remove="ThirdParty\SpineCSharp\ColorUnity.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="ThirdParty\SpineCSharp\**\*.cs">
+      <Nullable>disable</Nullable>
+      <WarningLevel>0</WarningLevel>
+    </Compile>
   </ItemGroup>
 
 </Project>

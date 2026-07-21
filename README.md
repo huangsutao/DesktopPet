@@ -22,7 +22,7 @@
 
 - Windows 10/11
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- Spine 导出资源（与 Runtime 主版本匹配，例如 4.2.x）
+- Spine 导出资源（与 Runtime 主版本匹配，例如 4.3.x）
 
 ## 快速开始
 
@@ -56,12 +56,22 @@ DesktopPet/
 ├── UI/                           # TrayIconService、Behaviors/
 ├── Services/                     # SettingsService / WindowPlacementService
 ├── Resources/                    # 其它静态资源
-└── third_party/spine-csharp/     # 官方 spine-csharp（方案 A，需自行放入）
+└── ThirdParty/SpineCSharp/       # 官方 spine-csharp 源码（方案 B，拷入主项目）
 ```
 
-### 接入 spine-csharp
+### 接入 spine-csharp（方案 B）
 
-见 [third_party/README.md](third_party/README.md)。放入官方源码后，主项目会自动 `ProjectReference`。
+将官方 [spine-csharp](https://github.com/EsotericSoftware/spine-runtimes/tree/4.3/spine-csharp) 的 `src` 目录下 `.cs` 文件拷贝到：
+
+```text
+ThirdParty/SpineCSharp/
+```
+
+保持原有子目录结构（例如 `Attachments/`）。主项目 SDK 会自动编译这些源码，无需单独 `ProjectReference`。
+
+WPF 工程已在 `.csproj` 中排除 `ColorMono.cs`（MonoGame/XNA）和 `ColorUnity.cs`（Unity），仅使用 `ColorOther.cs`。
+
+升级 Runtime 时：用对应分支的新 `src` 覆盖 `ThirdParty/SpineCSharp/`，并确认导出资源版本一致。
 
 ## 架构说明
 
@@ -75,6 +85,7 @@ DesktopPet/
 - Spine Runtime 与资源导出版本保持一致，升级时同步两边
 - 渲染与 UI 解耦：Window 只发事件，不直接操作 Skeleton 内部数据
 - 用户设置写到 `%AppData%/DesktopPet/settings.json`（计划）
+- `ThirdParty/SpineCSharp` 为官方源码，尽量少改；业务封装写在 `Spine/`
 
 ## 已知限制
 
