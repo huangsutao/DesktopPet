@@ -50,12 +50,18 @@ Assets/Pets/default/
 
 ```text
 DesktopPet/
-├── Assets/Pets/          # Spine 资源
-├── Core/                 # 状态机、配置
-├── Spine/                # 加载、更新、WPF 渲染
-├── UI/                   # 宠物窗、托盘
-└── Services/             # 设置、窗口位置
+├── Assets/Pets/default/          # Spine 资源（skel/json + atlas + png）
+├── Core/                         # PetState / PetStateMachine / PetConfig
+├── Spine/                        # SpineRuntimeHost / WpfSkeletonRenderer / AnimationController
+├── UI/                           # TrayIconService、Behaviors/
+├── Services/                     # SettingsService / WindowPlacementService
+├── Resources/                    # 其它静态资源
+└── third_party/spine-csharp/     # 官方 spine-csharp（方案 A，需自行放入）
 ```
+
+### 接入 spine-csharp
+
+见 [third_party/README.md](third_party/README.md)。放入官方源码后，主项目会自动 `ProjectReference`。
 
 ## 架构说明
 

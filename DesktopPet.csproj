@@ -8,4 +8,18 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Update="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- 方案 A：放入 third_party/spine-csharp 后自动引用 -->
+  <ItemGroup Condition="Exists('third_party\spine-csharp\spine-csharp.csproj')">
+    <ProjectReference Include="third_party\spine-csharp\spine-csharp.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="third_party\spine-csharp\" />
+  </ItemGroup>
+
 </Project>
