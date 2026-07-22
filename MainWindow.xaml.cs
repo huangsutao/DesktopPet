@@ -90,11 +90,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        var scale = (float)(_settings?.Config.Scale ?? 1.0);
+        var scale = (float)(_settings?.Config.Scale ?? 0.25);
         var data = _runtime.SkeletonData;
         // Skeleton data size is in spine units; atlas scale for examples is often 0.5.
-        var width = Math.Max(160, data.Width * scale + 40);
-        var height = Math.Max(160, data.Height * scale + 40);
+        var width = Math.Max(120, data.Width * scale + 24);
+        var height = Math.Max(120, data.Height * scale + 24);
         Width = width;
         Height = height;
     }
@@ -149,7 +149,7 @@ public partial class MainWindow : Window
         var pixelH = Math.Max(1, (int)Math.Ceiling(ActualHeight));
         _renderer.EnsureSize(pixelW, pixelH);
 
-        var scale = (float)(_settings?.Config.Scale ?? 1.0);
+        var scale = (float)(_settings?.Config.Scale ?? 0.25);
         // Origin near bottom-center of the window (after Y flip in renderer).
         var offsetX = pixelW * 0.5f;
         var offsetY = pixelH * 0.85f;

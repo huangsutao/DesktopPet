@@ -47,6 +47,20 @@ public sealed class SettingsService
             {
                 Config = loaded;
                 Config.WalkArea ??= new WalkAreaConfig();
+                var migrated = false;
+                // v2/v3: 官方示例默认尺寸统一为 0.25
+                if (Config.ConfigVersion < 3)
+                {
+                    Config.Scale = 0.25;
+                    Config.ConfigVersion = 3;
+                    migrated = true;
+                }
+
+                Config.Scale = Math.Clamp(Config.Scale, 0.1, 1.5);
+                if (migrated)
+                {
+                    Save();
+                }
             }
         }
         catch

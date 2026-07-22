@@ -41,7 +41,7 @@ public partial class SettingsWindow : Window
         var cfg = _settings.Config;
         CurrentPetText.Text = cfg.PetName;
         ScaleSlider.Value = Math.Clamp(cfg.Scale, ScaleSlider.Minimum, ScaleSlider.Maximum);
-        ScaleValueText.Text = ScaleSlider.Value.ToString("0.0", CultureInfo.InvariantCulture);
+        ScaleValueText.Text = ScaleSlider.Value.ToString("0.00", CultureInfo.InvariantCulture);
         TopmostCheck.IsChecked = cfg.Topmost;
 
         SelectWalkMode(cfg.WalkArea.Mode);
@@ -73,7 +73,7 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        ScaleValueText.Text = e.NewValue.ToString("0.0", CultureInfo.InvariantCulture);
+        ScaleValueText.Text = e.NewValue.ToString("0.00", CultureInfo.InvariantCulture);
     }
 
     private void WalkModeCombo_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
