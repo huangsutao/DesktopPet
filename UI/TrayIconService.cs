@@ -58,6 +58,7 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add("显示", null, (_, _) => ShowWindow());
         menu.Items.Add("隐藏", null, (_, _) => HideWindow());
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("关于", null, (_, _) => ShowAbout());
         menu.Items.Add("退出", null, (_, _) => ExitApp());
         return menu;
     }
@@ -75,6 +76,15 @@ public sealed class TrayIconService : IDisposable
     private void HideWindow()
     {
         _window.Hide();
+    }
+
+    private static void ShowAbout()
+    {
+        System.Windows.MessageBox.Show(
+            "DesktopPet\n基于 WPF + Spine 的桌面宠物。",
+            "关于",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private static void ExitApp()
