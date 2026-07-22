@@ -104,8 +104,7 @@ public partial class MainWindow : Window
         {
             case PetState.Idle:
                 _runtime.PlayIdle();
-                // 只在动作结束缩回一次，绝不在渲染循环里缩
-                if (previous is PetState.Clicked or PetState.Dragging)
+                if (previous is PetState.Clicked)
                 {
                     ShrinkToFittedSize();
                 }
@@ -113,9 +112,6 @@ public partial class MainWindow : Window
                 break;
             case PetState.Clicked:
                 _runtime.PlayClick();
-                break;
-            case PetState.Dragging:
-                _runtime.PlayDrag();
                 break;
         }
     }
@@ -312,7 +308,7 @@ public partial class MainWindow : Window
         if (!_dragStarted && (Math.Abs(dx) > DragThreshold || Math.Abs(dy) > DragThreshold))
         {
             _dragStarted = true;
-            _stateMachine.TryStartDrag();
+            // 拖拽只移动窗口，不切换状态、不播动作
         }
 
         if (!_dragStarted)
@@ -339,7 +335,6 @@ public partial class MainWindow : Window
 
         if (_dragStarted)
         {
-            _stateMachine.EndDrag();
             ClampToWorkingArea();
         }
         else
@@ -355,7 +350,6 @@ public partial class MainWindow : Window
     {
         if (_dragStarted)
         {
-            _stateMachine.EndDrag();
             ClampToWorkingArea();
         }
 
