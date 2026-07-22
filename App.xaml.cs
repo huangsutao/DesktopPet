@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using DesktopPet.Services;
 using DesktopPet.UI;
 
 namespace DesktopPet;
@@ -6,13 +7,23 @@ namespace DesktopPet;
 public partial class App : System.Windows.Application
 {
     private TrayIconService? _trayIcon;
+    private SettingsService? _settings;
+
+    public static SettingsService Settings =>
+        ((App)Current)._settings
+        ?? throw new InvalidOperationException("Settings not initialized.");
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
+        _settings = new SettingsService();
+        _settings.Load();
+
         var window = new MainWindow();
-        _trayIcon = new TrayIconService(window);
+        window.Topmost = _settings.Config.Topmost;
+
+        _trayIcon = new TrayIconService(window, _settings);
         _trayIcon.Initialize();
         window.Show();
     }

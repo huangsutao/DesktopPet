@@ -9,4 +9,6 @@ public sealed class PetConfig
     public bool Topmost { get; set; } = true;
 
     public bool ClickThrough { get; set; }
+
+    public WalkAreaConfig WalkArea { get; set; } = new();
 }

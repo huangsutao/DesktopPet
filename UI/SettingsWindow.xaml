@@ -1,0 +1,72 @@
+<Window x:Class="DesktopPet.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="设置"
+        Width="420"
+        Height="420"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="当前形象" FontWeight="SemiBold" Margin="0,0,0,4" />
+            <TextBlock x:Name="CurrentPetText" Margin="0,0,0,12" />
+
+            <TextBlock Text="缩放" FontWeight="SemiBold" Margin="0,0,0,4" />
+            <DockPanel Margin="0,0,0,12">
+                <TextBlock x:Name="ScaleValueText" DockPanel.Dock="Right" Width="40" TextAlignment="Right" VerticalAlignment="Center" />
+                <Slider x:Name="ScaleSlider"
+                        Minimum="0.5"
+                        Maximum="2.0"
+                        TickFrequency="0.1"
+                        IsSnapToTickEnabled="True"
+                        ValueChanged="ScaleSlider_OnValueChanged" />
+            </DockPanel>
+
+            <CheckBox x:Name="TopmostCheck" Content="始终置顶" Margin="0,0,0,16" />
+
+            <TextBlock Text="走动区域" FontWeight="SemiBold" Margin="0,0,0,4" />
+            <ComboBox x:Name="WalkModeCombo" Margin="0,0,0,8" SelectionChanged="WalkModeCombo_OnSelectionChanged">
+                <ComboBoxItem Content="整个工作区（除去任务栏）" Tag="WorkArea" />
+                <ComboBoxItem Content="工作区 + 边距内缩" Tag="Inset" />
+                <ComboBoxItem Content="自定义矩形" Tag="CustomRect" />
+            </ComboBox>
+
+            <Grid x:Name="InsetMarginsPanel" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="左" VerticalAlignment="Center" Margin="0,0,8,6" />
+                <TextBox x:Name="MarginLeftBox" Grid.Row="0" Grid.Column="1" Margin="0,0,12,6" />
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="上" VerticalAlignment="Center" Margin="0,0,8,6" />
+                <TextBox x:Name="MarginTopBox" Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="右" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox x:Name="MarginRightBox" Grid.Row="1" Grid.Column="1" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="下" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox x:Name="MarginBottomBox" Grid.Row="1" Grid.Column="3" />
+            </Grid>
+
+            <TextBlock Text="形象切换请用托盘菜单「切换形象」。"
+                       Foreground="Gray"
+                       TextWrapping="Wrap"
+                       Margin="0,8,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="取消" Width="80" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click" />
+            <Button Content="保存" Width="80" IsDefault="True" Click="Save_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
