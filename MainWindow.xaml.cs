@@ -62,6 +62,7 @@ public partial class MainWindow : Window
 
         _settings = settings;
         _settings.Changed += OnSettingsChanged;
+        _autonomy.ApplyConfig(_settings.Config.Autonomy);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -79,6 +80,7 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() =>
         {
             Topmost = _settings?.Config.Topmost ?? Topmost;
+            _autonomy.ApplyConfig(_settings?.Config.Autonomy);
             var petName = _settings?.Config.PetName ?? "default";
             if (!string.Equals(_runtime.LoadedPetName, petName, StringComparison.OrdinalIgnoreCase))
             {

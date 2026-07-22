@@ -14,4 +14,6 @@ public sealed class PetConfig
     public bool ClickThrough { get; set; }
 
     public WalkAreaConfig WalkArea { get; set; } = new();
+
+    public AutonomyConfig Autonomy { get; set; } = new();
 }

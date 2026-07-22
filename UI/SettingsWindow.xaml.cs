@@ -50,6 +50,11 @@ public partial class SettingsWindow : Window
         MarginRightBox.Text = cfg.WalkArea.MarginRight.ToString(CultureInfo.InvariantCulture);
         MarginBottomBox.Text = cfg.WalkArea.MarginBottom.ToString(CultureInfo.InvariantCulture);
         UpdateMarginsVisibility();
+
+        var autonomy = AutonomyConfig.Normalize(cfg.Autonomy);
+        FillRange(PauseBeforeWalkMinBox, PauseBeforeWalkMaxBox, autonomy.PauseBeforeWalk);
+        FillRange(PauseAfterWalkMinBox, PauseAfterWalkMaxBox, autonomy.PauseAfterWalk);
+        FillRange(PauseAfterActMinBox, PauseAfterActMaxBox, autonomy.PauseAfterAct);
     }
 
     private void SelectWalkMode(WalkAreaMode mode)
@@ -105,10 +110,27 @@ public partial class SettingsWindow : Window
             cfg.WalkArea.Mode = mode;
         }
 
-        cfg.WalkArea.MarginLeft = ParseMargin(MarginLeftBox.Text, cfg.WalkArea.MarginLeft);
-        cfg.WalkArea.MarginTop = ParseMargin(MarginTopBox.Text, cfg.WalkArea.MarginTop);
-        cfg.WalkArea.MarginRight = ParseMargin(MarginRightBox.Text, cfg.WalkArea.MarginRight);
-        cfg.WalkArea.MarginBottom = ParseMargin(MarginBottomBox.Text, cfg.WalkArea.MarginBottom);
+        cfg.WalkArea.MarginLeft = ParseNonNegative(MarginLeftBox.Text, cfg.WalkArea.MarginLeft);
+        cfg.WalkArea.MarginTop = ParseNonNegative(MarginTopBox.Text, cfg.WalkArea.MarginTop);
+        cfg.WalkArea.MarginRight = ParseNonNegative(MarginRightBox.Text, cfg.WalkArea.MarginRight);
+        cfg.WalkArea.MarginBottom = ParseNonNegative(MarginBottomBox.Text, cfg.WalkArea.MarginBottom);
+
+        var defaults = AutonomyConfig.CreateDefault();
+        cfg.Autonomy = AutonomyConfig.Normalize(new AutonomyConfig
+        {
+            PauseBeforeWalk = ReadRange(
+                PauseBeforeWalkMinBox,
+                PauseBeforeWalkMaxBox,
+                cfg.Autonomy?.PauseBeforeWalk ?? defaults.PauseBeforeWalk),
+            PauseAfterWalk = ReadRange(
+                PauseAfterWalkMinBox,
+                PauseAfterWalkMaxBox,
+                cfg.Autonomy?.PauseAfterWalk ?? defaults.PauseAfterWalk),
+            PauseAfterAct = ReadRange(
+                PauseAfterActMinBox,
+                PauseAfterActMaxBox,
+                cfg.Autonomy?.PauseAfterAct ?? defaults.PauseAfterAct),
+        });
 
         _settings.Save();
         Close();
@@ -116,7 +138,29 @@ public partial class SettingsWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
 
-    private static double ParseMargin(string text, double fallback) =>
+    private static void FillRange(
+        System.Windows.Controls.TextBox minBox,
+        System.Windows.Controls.TextBox maxBox,
+        SecondsRange range)
+    {
+        minBox.Text = FormatSeconds(range.Min);
+        maxBox.Text = FormatSeconds(range.Max);
+    }
+
+    private static SecondsRange ReadRange(
+        System.Windows.Controls.TextBox minBox,
+        System.Windows.Controls.TextBox maxBox,
+        SecondsRange fallback) =>
+        new()
+        {
+            Min = ParseNonNegative(minBox.Text, fallback.Min),
+            Max = ParseNonNegative(maxBox.Text, fallback.Max),
+        };
+
+    private static string FormatSeconds(double value) =>
+        value.ToString("0.##", CultureInfo.InvariantCulture);
+
+    private static double ParseNonNegative(string text, double fallback) =>
         double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
             ? Math.Max(0, value)
             : fallback;

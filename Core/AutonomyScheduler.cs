@@ -3,6 +3,7 @@ namespace DesktopPet.Core;
 /// <summary>
 /// Calm autonomy loop: wait → walk → wait → act → wait → …
 /// deliberately sparse so the pet does not constantly demand attention.
+/// Pause ranges come from <see cref="AutonomyConfig"/> (settings.json).
 /// </summary>
 public sealed class AutonomyScheduler
 {
@@ -15,12 +16,8 @@ public sealed class AutonomyScheduler
         PostActPause,
     }
 
-    // Seconds — long pauses by design.
-    private static readonly (double Min, double Max) PauseBeforeWalk = (12, 28);
-    private static readonly (double Min, double Max) PauseAfterWalk = (6, 16);
-    private static readonly (double Min, double Max) PauseAfterAct = (10, 24);
-
     private readonly Random _rng = new();
+    private AutonomyConfig _config = AutonomyConfig.CreateDefault();
     private Phase _phase = Phase.IdlePause;
     private double _timer;
 
@@ -33,19 +30,24 @@ public sealed class AutonomyScheduler
     /// <summary>True after <see cref="RequestAct"/> until finish/interrupt.</summary>
     public bool IsExpectingAct => _phase == Phase.Acting;
 
-    public AutonomyScheduler() => Schedule(PauseBeforeWalk);
+    public AutonomyScheduler() => Schedule(_config.PauseBeforeWalk);
+
+    public void ApplyConfig(AutonomyConfig? config)
+    {
+        _config = AutonomyConfig.Normalize(config);
+    }
 
     public void Reset()
     {
         _phase = Phase.IdlePause;
-        Schedule(PauseBeforeWalk);
+        Schedule(_config.PauseBeforeWalk);
     }
 
     /// <summary>User click/drag: abort current plan and wait before walking again.</summary>
     public void Interrupt()
     {
         _phase = Phase.IdlePause;
-        Schedule(PauseBeforeWalk);
+        Schedule(_config.PauseBeforeWalk);
     }
 
     public void NotifyWalkFinished()
@@ -56,7 +58,7 @@ public sealed class AutonomyScheduler
         }
 
         _phase = Phase.PostWalkPause;
-        Schedule(PauseAfterWalk);
+        Schedule(_config.PauseAfterWalk);
     }
 
     public void NotifyActFinished()
@@ -67,7 +69,7 @@ public sealed class AutonomyScheduler
         }
 
         _phase = Phase.PostActPause;
-        Schedule(PauseAfterAct);
+        Schedule(_config.PauseAfterAct);
     }
 
     public void Tick(double deltaSeconds)
@@ -97,6 +99,6 @@ public sealed class AutonomyScheduler
         }
     }
 
-    private void Schedule((double Min, double Max) range) =>
+    private void Schedule(SecondsRange range) =>
         _timer = range.Min + _rng.NextDouble() * (range.Max - range.Min);
 }
