@@ -35,13 +35,16 @@ dotnet run --project DesktopPet.csproj
 
 ## 资源放置
 
-将宠物资源放到：
+每个宠物一个目录，**运行时只使用 `export/`**：
 
 ```text
-Assets/Pets/default/
-  ├── skeleton.skel   # 或 skeleton.json
-  ├── skeleton.atlas
-  └── skeleton.png
+Assets/Pets/{petName}/
+  ├── export/                 # 会复制到编译输出（程序加载）
+  │   ├── *.atlas
+  │   ├── *.png
+  │   └── *-pro.skel / *.json
+  ├── images/                 # 编辑器用，不输出
+  └── *.spine                 # 编辑器用，不输出
 ```
 
 在配置中指定宠物名（默认 `default`）。**Spine 编辑器导出版本必须与引用的 spine-csharp Runtime 版本一致。**

@@ -10,7 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Assets\**\*">
+    <!-- 运行时只需要 export/；.spine、images/ 等编辑器资源保留在仓库，不复制到输出 -->
+    <None Update="Assets\Pets\*\export\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Resources\**\*">
