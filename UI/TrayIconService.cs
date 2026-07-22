@@ -17,6 +17,7 @@ public sealed class TrayIconService : IDisposable
     private NotifyIcon? _notifyIcon;
     private Icon? _icon;
     private ToolStripMenuItem? _switchPetMenu;
+    private ToolStripMenuItem? _clickThroughMenu;
 
     /// <summary>True while the tray context menu is visible.</summary>
     public static bool IsMenuOpen { get; private set; }
@@ -73,6 +74,14 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("设置", null, (_, _) => OpenSettings());
 
+        _clickThroughMenu = new ToolStripMenuItem("点击穿透")
+        {
+            CheckOnClick = true,
+            Checked = _settings.Config.ClickThrough,
+        };
+        _clickThroughMenu.Click += (_, _) => ToggleClickThrough();
+        menu.Items.Add(_clickThroughMenu);
+
         _switchPetMenu = new ToolStripMenuItem("切换形象");
         RebuildSwitchPetMenu();
         menu.Items.Add(_switchPetMenu);
@@ -81,6 +90,17 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add("关于", null, (_, _) => ShowAbout());
         menu.Items.Add("退出", null, (_, _) => ExitApp());
         return menu;
+    }
+
+    private void ToggleClickThrough()
+    {
+        if (_clickThroughMenu is null)
+        {
+            return;
+        }
+
+        _settings.Config.ClickThrough = _clickThroughMenu.Checked;
+        _settings.Save();
     }
 
     private void RebuildSwitchPetMenu()
@@ -131,6 +151,11 @@ public sealed class TrayIconService : IDisposable
         if (_notifyIcon is not null)
         {
             _notifyIcon.Text = BuildTrayText();
+        }
+
+        if (_clickThroughMenu is not null)
+        {
+            _clickThroughMenu.Checked = _settings.Config.ClickThrough;
         }
 
         RebuildSwitchPetMenu();

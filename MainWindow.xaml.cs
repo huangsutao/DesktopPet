@@ -75,6 +75,7 @@ public partial class MainWindow : Window
         PlaceAtBottomRight();
         ClampToWorkingArea();
         ReloadPet();
+        ApplyClickThrough();
         StartRendering();
     }
 
@@ -85,6 +86,7 @@ public partial class MainWindow : Window
         RunOnUi(() =>
         {
             Topmost = _settings?.Config.Topmost ?? Topmost;
+            ApplyClickThrough();
             _autonomy.ApplyConfig(_settings?.Config.Autonomy);
             _sleepConfig = SleepConfig.Normalize(_settings?.Config.Sleep);
             if (!_sleepConfig.Enabled && _stateMachine.Current == PetState.Sleep)
@@ -337,6 +339,11 @@ public partial class MainWindow : Window
     private void NoteUserInteraction()
     {
         _secondsSinceUserInteraction = 0;
+    }
+
+    private void ApplyClickThrough()
+    {
+        ClickThroughService.Apply(this, _settings?.Config.ClickThrough ?? false);
     }
 
     private void UpdateSleep(float delta)

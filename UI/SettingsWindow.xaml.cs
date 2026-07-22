@@ -53,6 +53,7 @@ public partial class SettingsWindow : Window
         ScaleSlider.Value = Math.Clamp(cfg.Scale, ScaleSlider.Minimum, ScaleSlider.Maximum);
         ScaleValueText.Text = ScaleSlider.Value.ToString("0.00", CultureInfo.InvariantCulture);
         TopmostCheck.IsChecked = cfg.Topmost;
+        ClickThroughCheck.IsChecked = cfg.ClickThrough;
 
         SelectWalkMode(cfg.WalkArea.Mode);
         MarginLeftBox.Text = cfg.WalkArea.MarginLeft.ToString(CultureInfo.InvariantCulture);
@@ -132,6 +133,7 @@ public partial class SettingsWindow : Window
         var cfg = _settings.Config;
         cfg.Scale = ScaleSlider.Value;
         cfg.Topmost = TopmostCheck.IsChecked == true;
+        cfg.ClickThrough = ClickThroughCheck.IsChecked == true;
 
         if (WalkModeCombo.SelectedItem is ComboBoxItem modeItem &&
             Enum.TryParse<WalkAreaMode>(modeItem.Tag as string, ignoreCase: true, out var mode))

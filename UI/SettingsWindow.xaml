@@ -41,7 +41,13 @@
                                     ValueChanged="ScaleSlider_OnValueChanged" />
                         </DockPanel>
 
-                        <CheckBox x:Name="TopmostCheck" Content="始终置顶" />
+                        <CheckBox x:Name="TopmostCheck" Content="始终置顶" Margin="0,0,0,12" />
+
+                        <CheckBox x:Name="ClickThroughCheck" Content="点击穿透" Margin="0,0,0,4" />
+                        <TextBlock Text="开启后鼠标会点穿宠物（无法点击/拖动），可用托盘菜单随时开关。"
+                                   Foreground="Gray"
+                                   FontSize="11"
+                                   TextWrapping="Wrap" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

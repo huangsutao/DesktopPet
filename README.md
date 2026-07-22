@@ -1,12 +1,12 @@
 # DesktopPet
 
-基于 **WPF + Spine** 的 Windows 桌面宠物。无边框透明置顶窗口，播放 Spine 骨骼动画，支持拖拽与点击互动。
+基于 **WPF + Spine** 的 Windows 桌面宠物。无边框透明置顶窗口，播放 Spine 骨骼动画，支持拖拽、点击互动、自主走动与睡眠。
 
 ## 技术栈
 
 - .NET 9 / WPF
 - Spine Runtime（C#，版本需与导出工具一致）
-- 渲染：WriteableBitmap 或 SkiaSharp（自研 SkeletonRenderer）
+- 渲染：自研 `WpfSkeletonRenderer`（WriteableBitmap）
 - 系统托盘：NotifyIcon
 
 ## 功能规划
@@ -15,9 +15,11 @@
 |------|------|------|
 | P0 | 透明置顶窗、拖拽、托盘退出 | 已完成 |
 | P1 | 加载 Spine、播放 idle | 已完成 |
-| P2 | 状态机（点击/拖拽/睡眠） | 已完成 |
-| P2/P3 | 自主走动（walkArea + 停顿/随机动作） | 已完成 |
-| P3 | 多皮肤、缩放、开机自启、点击穿透 | 多皮肤/缩放已有；自启/穿透待做 |
+| P2 | 状态机（点击 / 拖拽 / 睡眠） | 已完成 |
+| P2/P3 | 自主走动（walkArea + 停顿 / 随机动作） | 已完成 |
+| P3 | 多皮肤、缩放、点击穿透、设置页 | 已完成 |
+
+不做开机自启。
 
 ## 环境要求
 
@@ -33,6 +35,8 @@ cd DesktopPet
 dotnet restore
 dotnet run --project DesktopPet.csproj
 ```
+
+托盘菜单可切换形象、开关点击穿透、打开设置。用户设置保存在 `%AppData%/DesktopPet/settings.json`。
 
 ## 资源放置
 
@@ -52,14 +56,20 @@ Assets/Pets/{petName}/
 
 ### 动作映射配置
 
-程序根目录（输出目录）下的 `pet-animations.json` 控制 idle / 点击轮换 / 拖拽候选动画，**增改素材只需改此文件**：
+程序根目录（输出目录）下的 `pet-animations.json` 控制 idle / 点击 / 拖拽 / 走动 / 睡眠等候选动画，**增改素材只需改此文件**：
 
 ```json
 {
   "includeAllNonIdleOnClick": true,
-  "defaults": { "idle": ["idle"], "click": ["jump"], "drag": [] },
+  "defaults": {
+    "idle": ["idle"],
+    "click": ["jump"],
+    "drag": [],
+    "walk": ["walk", "run"],
+    "sleep": ["sleep", "death", "idle"]
+  },
   "pets": [
-    { "match": "spineboy", "click": ["jump", "shoot", "portal"] }
+    { "match": "spineboy", "click": ["jump", "shoot", "portal"], "walk": ["walk", "run"] }
   ]
 }
 ```
@@ -74,10 +84,10 @@ Assets/Pets/{petName}/
 ```text
 DesktopPet/
 ├── Assets/Pets/default/          # Spine 资源（skel/json + atlas + png）
-├── Core/                         # PetState / PetStateMachine / PetConfig
+├── Core/                         # PetState / PetStateMachine / PetConfig / Autonomy*
 ├── Spine/                        # SpineRuntimeHost / WpfSkeletonRenderer / AnimationController
-├── UI/                           # TrayIconService、Behaviors/
-├── Services/                     # SettingsService / WindowPlacementService
+├── UI/                           # TrayIconService、SettingsWindow
+├── Services/                     # SettingsService / ClickThroughService 等
 ├── Resources/                    # 其它静态资源
 └── ThirdParty/SpineCSharp/       # 官方 spine-csharp 源码（方案 B，拷入主项目）
 ```
@@ -98,8 +108,9 @@ WPF 工程已在 `.csproj` 中排除 `ColorMono.cs`（MonoGame/XNA）和 `ColorU
 
 ## 架构说明
 
-- **PetWindow**：透明无边框主窗，处理拖拽与点击
+- **MainWindow**：透明无边框主窗，处理拖拽、点击、自主走动
 - **PetStateMachine**：Idle / Walk / Sleep / Clicked 等状态切换
+- **AutonomyScheduler**：安静节奏（停 → 走 → 停 → 动作）
 - **SpineRuntimeHost**：Skeleton 加载与每帧 Update
 - **WpfSkeletonRenderer**：将 Spine 网格绘制到 WPF 可显示表面
 
@@ -107,13 +118,14 @@ WPF 工程已在 `.csproj` 中排除 `ColorMono.cs`（MonoGame/XNA）和 `ColorU
 
 - Spine Runtime 与资源导出版本保持一致，升级时同步两边
 - 渲染与 UI 解耦：Window 只发事件，不直接操作 Skeleton 内部数据
-- 用户设置写到 `%AppData%/DesktopPet/settings.json`（计划）
+- 用户设置写到 `%AppData%/DesktopPet/settings.json`
 - `ThirdParty/SpineCSharp` 为官方源码，尽量少改；业务封装写在 `Spine/`
 
 ## 已知限制
 
 - WPF 无官方 Spine 控件，需自实现渲染桥接
 - 仅支持 Windows（WPF）
+- 开启点击穿透后无法直接点宠物，需用托盘开关关闭
 
 ## License
 
