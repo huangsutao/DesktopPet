@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using DesktopPet.Core;
 using DesktopPet.Services;
 using DesktopPet.Spine;
 
@@ -9,12 +10,18 @@ namespace DesktopPet;
 public partial class MainWindow : Window
 {
     private const double BottomRightMargin = 24;
+    private const double DragThreshold = 5;
 
     private readonly SpineRuntimeHost _runtime = new();
     private readonly WpfSkeletonRenderer _renderer = new();
+    private readonly PetStateMachine _stateMachine = new();
     private SettingsService? _settings;
     private TimeSpan _lastRenderTime;
     private bool _rendering;
+
+    private System.Windows.Point _mouseDownInWindow;
+    private bool _dragStarted;
+    private bool _mouseCaptured;
 
     public MainWindow()
     {
@@ -22,6 +29,8 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         Closed += (_, _) => Cleanup();
+        _stateMachine.StateChanged += OnPetStateChanged;
+        _runtime.AnimationCompleted += OnAnimationCompleted;
     }
 
     public void AttachSettings(SettingsService settings)
@@ -69,6 +78,7 @@ public partial class MainWindow : Window
         try
         {
             _runtime.LoadPet(petName);
+            _stateMachine.Reset();
             FitWindowToSkeleton();
             PlaceAtBottomRight();
             ClampToWorkingArea();
@@ -83,6 +93,33 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnPetStateChanged(PetState previous, PetState next)
+    {
+        switch (next)
+        {
+            case PetState.Idle:
+                _runtime.PlayIdle();
+                break;
+            case PetState.Clicked:
+                _runtime.PlayClick();
+                break;
+            case PetState.Dragging:
+                _runtime.PlayDrag();
+                break;
+        }
+    }
+
+    private void OnAnimationCompleted()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (_stateMachine.Current == PetState.Clicked)
+            {
+                _stateMachine.EndClick();
+            }
+        });
+    }
+
     private void FitWindowToSkeleton()
     {
         if (_runtime.SkeletonData is null)
@@ -92,7 +129,6 @@ public partial class MainWindow : Window
 
         var scale = (float)(_settings?.Config.Scale ?? 0.25);
         var data = _runtime.SkeletonData;
-        // Skeleton data size is in spine units; atlas scale for examples is often 0.5.
         var width = Math.Max(120, data.Width * scale + 24);
         var height = Math.Max(120, data.Height * scale + 24);
         Width = width;
@@ -150,7 +186,6 @@ public partial class MainWindow : Window
         _renderer.EnsureSize(pixelW, pixelH);
 
         var scale = (float)(_settings?.Config.Scale ?? 0.25);
-        // Origin near bottom-center of the window (after Y flip in renderer).
         var offsetX = pixelW * 0.5f;
         var offsetY = pixelH * 0.85f;
         _renderer.Render(_runtime.Skeleton, scale, offsetX, offsetY);
@@ -163,11 +198,80 @@ public partial class MainWindow : Window
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.ChangedButton == MouseButton.Left)
+        if (e.ChangedButton != MouseButton.Left)
         {
-            DragMove();
+            return;
+        }
+
+        _mouseDownInWindow = e.GetPosition(this);
+        _dragStarted = false;
+        _mouseCaptured = CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void Window_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_mouseCaptured || e.LeftButton != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        var current = e.GetPosition(this);
+        var dx = current.X - _mouseDownInWindow.X;
+        var dy = current.Y - _mouseDownInWindow.Y;
+
+        if (!_dragStarted && (Math.Abs(dx) > DragThreshold || Math.Abs(dy) > DragThreshold))
+        {
+            _dragStarted = true;
+            _stateMachine.TryStartDrag();
+        }
+
+        if (!_dragStarted)
+        {
+            return;
+        }
+
+        var screen = PointToScreen(e.GetPosition(this));
+        Left = screen.X - _mouseDownInWindow.X;
+        Top = screen.Y - _mouseDownInWindow.Y;
+        ClampToWorkingArea();
+        e.Handled = true;
+    }
+
+    private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_mouseCaptured)
+        {
+            return;
+        }
+
+        ReleaseMouseCapture();
+        _mouseCaptured = false;
+
+        if (_dragStarted)
+        {
+            _stateMachine.EndDrag();
             ClampToWorkingArea();
         }
+        else
+        {
+            _stateMachine.TryClick();
+        }
+
+        _dragStarted = false;
+        e.Handled = true;
+    }
+
+    private void Window_LostMouseCapture(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (_dragStarted)
+        {
+            _stateMachine.EndDrag();
+            ClampToWorkingArea();
+        }
+
+        _mouseCaptured = false;
+        _dragStarted = false;
     }
 
     private void PlaceAtBottomRight()
@@ -206,6 +310,8 @@ public partial class MainWindow : Window
     private void Cleanup()
     {
         StopRendering();
+        _stateMachine.StateChanged -= OnPetStateChanged;
+        _runtime.AnimationCompleted -= OnAnimationCompleted;
         if (_settings is not null)
         {
             _settings.Changed -= OnSettingsChanged;

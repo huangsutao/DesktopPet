@@ -10,6 +10,7 @@ public sealed class SpineRuntimeHost : IDisposable
     private readonly WpfTextureLoader _textureLoader = new();
     private readonly AnimationController _animationController = new();
     private Atlas? _atlas;
+    private AnimationState.TrackEntryDelegate? _completeHandler;
 
     public bool IsLoaded { get; private set; }
 
@@ -22,6 +23,8 @@ public sealed class SpineRuntimeHost : IDisposable
     public AnimationController Animations => _animationController;
 
     public string? LoadedPetName { get; private set; }
+
+    public event Action? AnimationCompleted;
 
     public void LoadPet(string petName)
     {
@@ -41,10 +44,43 @@ public sealed class SpineRuntimeHost : IDisposable
 
         var stateData = new AnimationStateData(SkeletonData);
         AnimationState = new AnimationState(stateData);
+        _completeHandler = _ => AnimationCompleted?.Invoke();
+        AnimationState.Complete += _completeHandler;
+
         _animationController.PlayIdle(AnimationState, SkeletonData);
 
         LoadedPetName = petName;
         IsLoaded = true;
+    }
+
+    public void PlayIdle()
+    {
+        if (AnimationState is null || SkeletonData is null)
+        {
+            return;
+        }
+
+        _animationController.PlayIdle(AnimationState, SkeletonData);
+    }
+
+    public void PlayClick()
+    {
+        if (AnimationState is null || SkeletonData is null)
+        {
+            return;
+        }
+
+        _animationController.PlayClick(AnimationState, SkeletonData);
+    }
+
+    public void PlayDrag()
+    {
+        if (AnimationState is null || SkeletonData is null)
+        {
+            return;
+        }
+
+        _animationController.PlayDrag(AnimationState, SkeletonData);
     }
 
     public void Update(float deltaSeconds)
@@ -67,6 +103,12 @@ public sealed class SpineRuntimeHost : IDisposable
 
     private void DisposeRuntime()
     {
+        if (AnimationState is not null && _completeHandler is not null)
+        {
+            AnimationState.Complete -= _completeHandler;
+        }
+
+        _completeHandler = null;
         IsLoaded = false;
         LoadedPetName = null;
         AnimationState = null;

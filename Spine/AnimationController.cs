@@ -3,24 +3,30 @@ using Spine;
 namespace DesktopPet.Spine;
 
 /// <summary>
-/// Maps pet states to Spine animation names and handles fallbacks.
+/// Maps pet states to Spine animation names and handles transitions.
 /// </summary>
 public sealed class AnimationController
 {
-    private static readonly string[] IdleCandidates = ["idle", "Idle", "stand", "breath"];
-    private static readonly string[] FallbackCandidates = ["walk", "run", "sneak", "hoverboard"];
-
     public string CurrentAnimation { get; private set; } = string.Empty;
 
-    public void PlayIdle(AnimationState state, SkeletonData data)
+    public void PlayIdle(AnimationState state, SkeletonData data) =>
+        PlayAction(state, data, PetAction.Idle, loop: true);
+
+    public void PlayClick(AnimationState state, SkeletonData data) =>
+        PlayAction(state, data, PetAction.Click, loop: false);
+
+    public void PlayDrag(AnimationState state, SkeletonData data) =>
+        PlayAction(state, data, PetAction.Drag, loop: true);
+
+    public void PlayAction(AnimationState state, SkeletonData data, PetAction action, bool loop)
     {
-        var name = ResolveIdle(data);
+        var name = PetAnimationMap.Resolve(data, action);
         if (name is null)
         {
             return;
         }
 
-        Play(state, name, loop: true);
+        Play(state, name, loop);
     }
 
     public void Play(AnimationState state, string animationName, bool loop = true)
@@ -32,26 +38,5 @@ public sealed class AnimationController
 
         CurrentAnimation = animationName;
         state.SetAnimation(0, animationName, loop);
-    }
-
-    public static string? ResolveIdle(SkeletonData data)
-    {
-        foreach (var name in IdleCandidates)
-        {
-            if (data.FindAnimation(name) is not null)
-            {
-                return name;
-            }
-        }
-
-        foreach (var name in FallbackCandidates)
-        {
-            if (data.FindAnimation(name) is not null)
-            {
-                return name;
-            }
-        }
-
-        return data.Animations.Count > 0 ? data.Animations.Items[0].Name : null;
     }
 }

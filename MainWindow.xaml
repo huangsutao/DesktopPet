@@ -11,11 +11,14 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         WindowStartupLocation="Manual"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        MouseMove="Window_MouseMove"
+        MouseLeftButtonUp="Window_MouseLeftButtonUp"
+        LostMouseCapture="Window_LostMouseCapture">
     <Grid>
         <Image x:Name="PetImage"
                Stretch="Fill"
                Cursor="Hand"
-               ToolTip="DesktopPet（拖拽移动）" />
+               ToolTip="DesktopPet（点击互动 / 拖拽移动）" />
     </Grid>
 </Window>
