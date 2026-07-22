@@ -18,11 +18,14 @@ public partial class MainWindow : Window
     private const double RunSpeed = 150;
     private const double RunDistanceThreshold = 280;
     private const double ArriveEpsilon = 2;
+    /// <summary>固定预留头顶气泡高度，避免显示时改窗体尺寸与渲染打架。</summary>
+    private const double BubbleHeadroom = 72;
 
     private readonly SpineRuntimeHost _runtime = new();
     private readonly WpfSkeletonRenderer _renderer = new();
     private readonly PetStateMachine _stateMachine = new();
     private readonly AutonomyScheduler _autonomy = new();
+    private readonly SpeechBubbleScheduler _bubbles = new();
     private readonly Random _rng = new();
     private SettingsService? _settings;
     private TimeSpan _lastRenderTime;
@@ -54,6 +57,8 @@ public partial class MainWindow : Window
         _runtime.AnimationCompleted += OnAnimationCompleted;
         _autonomy.RequestWalk += OnAutonomyRequestWalk;
         _autonomy.RequestAct += OnAutonomyRequestAct;
+        _bubbles.RequestShow += OnBubbleRequestShow;
+        _bubbles.RequestHide += OnBubbleRequestHide;
     }
 
     public void AttachSettings(SettingsService settings)
@@ -116,6 +121,8 @@ public partial class MainWindow : Window
             _runtime.LoadPet(petName);
             _stateMachine.Reset();
             _autonomy.Reset();
+            _bubbles.Reset();
+            HideSpeechBubbleImmediate();
             NoteUserInteraction();
             FitWindowToSkeleton();
             PlaceAtBottomRight();
@@ -144,12 +151,14 @@ public partial class MainWindow : Window
 
                 break;
             case PetState.Walk:
+                _bubbles.Interrupt();
                 _runtime.PlayWalk(_preferRunWalk);
                 break;
             case PetState.Sleep:
                 CancelWalkMovement();
                 _autonomy.Interrupt();
                 _autonomyAction = false;
+                _bubbles.Interrupt();
                 _runtime.PlaySleep();
                 break;
             case PetState.Clicked:
@@ -391,13 +400,15 @@ public partial class MainWindow : Window
             const float pad = 12f;
             const float jumpHeadroomFactor = 0.45f;
             _fittedWidth = Math.Max(120, bw * scale + pad * 2);
-            _fittedHeight = Math.Max(120, bh * scale * (1f + jumpHeadroomFactor) + pad * 2);
+            _fittedHeight = Math.Max(
+                120,
+                bh * scale * (1f + jumpHeadroomFactor) + pad * 2 + BubbleHeadroom);
         }
         else
         {
             var data = _runtime.SkeletonData;
             _fittedWidth = Math.Max(120, data.Width * scale * 1.1 + 16);
-            _fittedHeight = Math.Max(120, data.Height * scale * 1.35 + 16);
+            _fittedHeight = Math.Max(120, data.Height * scale * 1.35 + 16 + BubbleHeadroom);
         }
 
         Width = _fittedWidth;
@@ -475,6 +486,14 @@ public partial class MainWindow : Window
             UpdateWalkMovement(delta);
         }
 
+        if (!uiOverlayOpen &&
+            !_dragStarted &&
+            !_hasWalkTarget &&
+            _stateMachine.Current is PetState.Idle)
+        {
+            _bubbles.Tick(delta);
+        }
+
         if (!uiOverlayOpen && !_dragStarted)
         {
             UpdateSleep(delta);
@@ -538,6 +557,21 @@ public partial class MainWindow : Window
     private void ShrinkToFittedSize()
     {
         ResizeKeepingBottomCenter(_fittedWidth, _fittedHeight);
+    }
+
+    private void OnBubbleRequestShow(string message)
+    {
+        RunOnUi(() => SpeechBubble.Show(message));
+    }
+
+    private void OnBubbleRequestHide()
+    {
+        RunOnUi(() => SpeechBubble.Hide());
+    }
+
+    private void HideSpeechBubbleImmediate()
+    {
+        SpeechBubble.HideImmediate();
     }
 
     private bool ResizeKeepingBottomCenter(double newW, double newH)
@@ -676,6 +710,8 @@ public partial class MainWindow : Window
         _runtime.AnimationCompleted -= OnAnimationCompleted;
         _autonomy.RequestWalk -= OnAutonomyRequestWalk;
         _autonomy.RequestAct -= OnAutonomyRequestAct;
+        _bubbles.RequestShow -= OnBubbleRequestShow;
+        _bubbles.RequestHide -= OnBubbleRequestHide;
         if (_settings is not null)
         {
             _settings.Changed -= OnSettingsChanged;

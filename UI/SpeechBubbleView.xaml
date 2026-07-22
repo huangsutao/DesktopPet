@@ -1,0 +1,46 @@
+<UserControl x:Class="DesktopPet.UI.SpeechBubbleView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             IsHitTestVisible="False"
+             Opacity="0"
+             Visibility="Collapsed">
+    <Grid HorizontalAlignment="Center" Margin="10,8,10,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 气泡本体（不用 DropShadow：透明窗上易闪烁） -->
+        <Border Grid.Row="0"
+                MaxWidth="200"
+                CornerRadius="14"
+                Padding="12,9"
+                BorderThickness="1.25"
+                BorderBrush="#C9A86A"
+                SnapsToDevicePixels="True">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#FFFBF5" Offset="0" />
+                    <GradientStop Color="#F7EEDF" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <TextBlock x:Name="MessageText"
+                       Text="……"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       FontFamily="KaiTi, STKaiti, Microsoft YaHei UI"
+                       FontSize="13.5"
+                       LineHeight="20"
+                       Foreground="#3D2C1E" />
+        </Border>
+
+        <Path Grid.Row="1"
+              HorizontalAlignment="Center"
+              Margin="0,-1,0,0"
+              Data="M 0,0 L 8,9 L 16,0 Z"
+              Fill="#F7EEDF"
+              Stroke="#C9A86A"
+              StrokeThickness="1.25"
+              Stretch="None" />
+    </Grid>
+</UserControl>
