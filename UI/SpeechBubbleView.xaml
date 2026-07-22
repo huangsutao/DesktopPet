@@ -4,7 +4,7 @@
              IsHitTestVisible="False"
              Opacity="0"
              Visibility="Collapsed">
-    <Grid HorizontalAlignment="Center" Margin="10,8,10,0">
+    <Grid HorizontalAlignment="Center" Margin="8,0,8,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />

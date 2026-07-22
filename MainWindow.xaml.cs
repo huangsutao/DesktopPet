@@ -18,8 +18,6 @@ public partial class MainWindow : Window
     private const double RunSpeed = 150;
     private const double RunDistanceThreshold = 280;
     private const double ArriveEpsilon = 2;
-    /// <summary>固定预留头顶气泡高度，避免显示时改窗体尺寸与渲染打架。</summary>
-    private const double BubbleHeadroom = 72;
 
     private readonly SpineRuntimeHost _runtime = new();
     private readonly WpfSkeletonRenderer _renderer = new();
@@ -401,15 +399,13 @@ public partial class MainWindow : Window
             const float pad = 12f;
             const float jumpHeadroomFactor = 0.45f;
             _fittedWidth = Math.Max(120, bw * scale + pad * 2);
-            _fittedHeight = Math.Max(
-                120,
-                bh * scale * (1f + jumpHeadroomFactor) + pad * 2 + BubbleHeadroom);
+            _fittedHeight = Math.Max(120, bh * scale * (1f + jumpHeadroomFactor) + pad * 2);
         }
         else
         {
             var data = _runtime.SkeletonData;
             _fittedWidth = Math.Max(120, data.Width * scale * 1.1 + 16);
-            _fittedHeight = Math.Max(120, data.Height * scale * 1.35 + 16 + BubbleHeadroom);
+            _fittedHeight = Math.Max(120, data.Height * scale * 1.35 + 16);
         }
 
         Width = _fittedWidth;
@@ -524,6 +520,42 @@ public partial class MainWindow : Window
         {
             PetImage.Source = _renderer.ImageSource;
         }
+
+        UpdateBubblePositionAboveHead(_runtime.Skeleton, scale, offsetX, offsetY);
+    }
+
+    /// <summary>
+    /// Place the bubble just above the skeleton head (not at the window top).
+    /// </summary>
+    private void UpdateBubblePositionAboveHead(
+        global::Spine.Skeleton skeleton,
+        float scale,
+        float offsetX,
+        float offsetY)
+    {
+        if (SpeechBubble.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        skeleton.GetBounds(out _, out var by, out _, out var bh, ref _boundsVertexBuffer);
+        if (bh <= 1 || bh >= 5000)
+        {
+            return;
+        }
+
+        var headTop = -(by + bh) * scale + offsetY;
+        var bubbleH = SpeechBubble.ActualHeight;
+        if (bubbleH < 8)
+        {
+            SpeechBubble.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+            bubbleH = Math.Max(36, SpeechBubble.DesiredSize.Height);
+        }
+
+        const double gap = 2;
+        var top = headTop - bubbleH - gap;
+        top = Math.Clamp(top, 2, Math.Max(2, ActualHeight - bubbleH - 4));
+        SpeechBubble.Margin = new Thickness(0, top, 0, 0);
     }
 
     /// <summary>
