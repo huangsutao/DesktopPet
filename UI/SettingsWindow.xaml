@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="设置"
-        Width="440"
-        Height="560"
+        Width="460"
+        Height="420"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         ShowInTaskbar="True">
@@ -13,107 +13,136 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <TextBlock Text="当前形象" FontWeight="SemiBold" Margin="0,0,0,4" />
-                <TextBlock x:Name="CurrentPetText" Margin="0,0,0,12" />
+        <TabControl Grid.Row="0" Padding="0">
+            <!-- 常规 -->
+            <TabItem Header="常规">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,12,12,4">
+                    <StackPanel>
+                        <TextBlock Text="当前形象" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <TextBlock x:Name="CurrentPetText" Margin="0,0,0,4" />
+                        <TextBlock Text="形象切换请用托盘菜单「切换形象」。"
+                                   Foreground="Gray"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,16" />
 
-                <TextBlock Text="缩放" FontWeight="SemiBold" Margin="0,0,0,4" />
-                <DockPanel Margin="0,0,0,12">
-                    <TextBlock x:Name="ScaleValueText" DockPanel.Dock="Right" Width="40" TextAlignment="Right" VerticalAlignment="Center" />
-                    <Slider x:Name="ScaleSlider"
-                            Minimum="0.1"
-                            Maximum="1.5"
-                            TickFrequency="0.05"
-                            IsSnapToTickEnabled="True"
-                            ValueChanged="ScaleSlider_OnValueChanged" />
-                </DockPanel>
+                        <TextBlock Text="缩放" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <DockPanel Margin="0,0,0,16">
+                            <TextBlock x:Name="ScaleValueText"
+                                       DockPanel.Dock="Right"
+                                       Width="40"
+                                       TextAlignment="Right"
+                                       VerticalAlignment="Center" />
+                            <Slider x:Name="ScaleSlider"
+                                    Minimum="0.1"
+                                    Maximum="1.5"
+                                    TickFrequency="0.05"
+                                    IsSnapToTickEnabled="True"
+                                    ValueChanged="ScaleSlider_OnValueChanged" />
+                        </DockPanel>
 
-                <CheckBox x:Name="TopmostCheck" Content="始终置顶" Margin="0,0,0,16" />
+                        <CheckBox x:Name="TopmostCheck" Content="始终置顶" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                <TextBlock Text="走动区域" FontWeight="SemiBold" Margin="0,0,0,4" />
-                <ComboBox x:Name="WalkModeCombo" Margin="0,0,0,8" SelectionChanged="WalkModeCombo_OnSelectionChanged">
-                    <ComboBoxItem Content="整个工作区（除去任务栏）" Tag="WorkArea" />
-                    <ComboBoxItem Content="工作区 + 边距内缩" Tag="Inset" />
-                    <ComboBoxItem Content="自定义矩形" Tag="CustomRect" />
-                </ComboBox>
+            <!-- 走动 -->
+            <TabItem Header="走动">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,12,12,4">
+                    <StackPanel>
+                        <TextBlock Text="走动区域" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <ComboBox x:Name="WalkModeCombo"
+                                  Margin="0,0,0,8"
+                                  SelectionChanged="WalkModeCombo_OnSelectionChanged">
+                            <ComboBoxItem Content="整个工作区（除去任务栏）" Tag="WorkArea" />
+                            <ComboBoxItem Content="工作区 + 边距内缩" Tag="Inset" />
+                            <ComboBoxItem Content="自定义矩形" Tag="CustomRect" />
+                        </ComboBox>
 
-                <Grid x:Name="InsetMarginsPanel" Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="左" VerticalAlignment="Center" Margin="0,0,8,6" />
-                    <TextBox x:Name="MarginLeftBox" Grid.Row="0" Grid.Column="1" Margin="0,0,12,6" />
-                    <TextBlock Grid.Row="0" Grid.Column="2" Text="上" VerticalAlignment="Center" Margin="0,0,8,6" />
-                    <TextBox x:Name="MarginTopBox" Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" />
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="右" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBox x:Name="MarginRightBox" Grid.Row="1" Grid.Column="1" Margin="0,0,12,0" />
-                    <TextBlock Grid.Row="1" Grid.Column="2" Text="下" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBox x:Name="MarginBottomBox" Grid.Row="1" Grid.Column="3" />
-                </Grid>
+                        <Grid x:Name="InsetMarginsPanel" Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="左" VerticalAlignment="Center" Margin="0,0,8,6" />
+                            <TextBox x:Name="MarginLeftBox" Grid.Row="0" Grid.Column="1" Margin="0,0,12,6" />
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="上" VerticalAlignment="Center" Margin="0,0,8,6" />
+                            <TextBox x:Name="MarginTopBox" Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="右" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox x:Name="MarginRightBox" Grid.Row="1" Grid.Column="1" Margin="0,0,12,0" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="下" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox x:Name="MarginBottomBox" Grid.Row="1" Grid.Column="3" />
+                        </Grid>
 
-                <TextBlock Text="自主节奏（秒，随机区间）" FontWeight="SemiBold" Margin="0,12,0,4" />
-                <TextBlock Text="停一阵 → 走动 → 再停 → 做动作 → 再停"
-                           Foreground="Gray"
-                           FontSize="11"
-                           Margin="0,0,0,8" />
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="64" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="64" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+                        <TextBlock Text="自主节奏（秒，随机区间）" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <TextBlock Text="停一阵 → 走动 → 再停 → 做动作 → 再停"
+                                   Foreground="Gray"
+                                   FontSize="11"
+                                   Margin="0,0,0,8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="64" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="64" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Grid.Column="1" Text="最小" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="Gray" FontSize="11" />
-                    <TextBlock Grid.Row="0" Grid.Column="3" Text="最大" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="Gray" FontSize="11" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="最小" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="Gray" FontSize="11" />
+                            <TextBlock Grid.Row="0" Grid.Column="3" Text="最大" HorizontalAlignment="Center" Margin="0,0,0,4" Foreground="Gray" FontSize="11" />
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="走动前等待" VerticalAlignment="Center" Margin="0,0,8,6" />
-                    <TextBox x:Name="PauseBeforeWalkMinBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,6" />
-                    <TextBlock Grid.Row="1" Grid.Column="2" Text="–" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,6" />
-                    <TextBox x:Name="PauseBeforeWalkMaxBox" Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="走动前等待" VerticalAlignment="Center" Margin="0,0,8,6" />
+                            <TextBox x:Name="PauseBeforeWalkMinBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,6" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="–" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,6" />
+                            <TextBox x:Name="PauseBeforeWalkMaxBox" Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" />
 
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="走完后等待" VerticalAlignment="Center" Margin="0,0,8,6" />
-                    <TextBox x:Name="PauseAfterWalkMinBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,6" />
-                    <TextBlock Grid.Row="2" Grid.Column="2" Text="–" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,6" />
-                    <TextBox x:Name="PauseAfterWalkMaxBox" Grid.Row="2" Grid.Column="3" Margin="0,0,0,6" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="走完后等待" VerticalAlignment="Center" Margin="0,0,8,6" />
+                            <TextBox x:Name="PauseAfterWalkMinBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,6" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="–" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,6" />
+                            <TextBox x:Name="PauseAfterWalkMaxBox" Grid.Row="2" Grid.Column="3" Margin="0,0,0,6" />
 
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="动作后等待" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBox x:Name="PauseAfterActMinBox" Grid.Row="3" Grid.Column="1" />
-                    <TextBlock Grid.Row="3" Grid.Column="2" Text="–" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <TextBox x:Name="PauseAfterActMaxBox" Grid.Row="3" Grid.Column="3" />
-                </Grid>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="动作后等待" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox x:Name="PauseAfterActMinBox" Grid.Row="3" Grid.Column="1" />
+                            <TextBlock Grid.Row="3" Grid.Column="2" Text="–" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <TextBox x:Name="PauseAfterActMaxBox" Grid.Row="3" Grid.Column="3" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                <TextBlock Text="睡眠" FontWeight="SemiBold" Margin="0,12,0,4" />
-                <CheckBox x:Name="SleepEnabledCheck"
-                          Content="启用睡眠（长时间无点击/拖动后）"
-                          Margin="0,0,0,8"
-                          Checked="SleepEnabledCheck_OnChanged"
-                          Unchecked="SleepEnabledCheck_OnChanged" />
-                <DockPanel x:Name="SleepIdlePanel" Margin="0,0,0,8">
-                    <TextBlock Text="无交互时长（秒）" VerticalAlignment="Center" Margin="0,0,12,0" />
-                    <TextBox x:Name="SleepIdleSecondsBox" Width="80" HorizontalAlignment="Left" />
-                </DockPanel>
-
-                <TextBlock Text="形象切换请用托盘菜单「切换形象」。"
-                           Foreground="Gray"
-                           TextWrapping="Wrap"
-                           Margin="0,8,0,0" />
-            </StackPanel>
-        </ScrollViewer>
+            <!-- 睡眠 -->
+            <TabItem Header="睡眠">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,12,12,4">
+                    <StackPanel>
+                        <CheckBox x:Name="SleepEnabledCheck"
+                                  Content="启用睡眠"
+                                  Margin="0,0,0,8"
+                                  Checked="SleepEnabledCheck_OnChanged"
+                                  Unchecked="SleepEnabledCheck_OnChanged" />
+                        <TextBlock Text="长时间无点击、拖动后进入睡眠，暂停自主走动。"
+                                   Foreground="Gray"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12" />
+                        <DockPanel x:Name="SleepIdlePanel">
+                            <TextBlock Text="无交互时长（秒）" VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <TextBox x:Name="SleepIdleSecondsBox" Width="80" HorizontalAlignment="Left" />
+                        </DockPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="取消" Width="80" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click" />
