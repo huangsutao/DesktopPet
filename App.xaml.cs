@@ -21,6 +21,7 @@ public partial class App : System.Windows.Application
         _settings.Load();
 
         var window = new MainWindow();
+        window.AttachSettings(_settings);
         window.Topmost = _settings.Config.Topmost;
 
         _trayIcon = new TrayIconService(window, _settings);
