@@ -42,7 +42,7 @@ public partial class MainWindow : Window
     private double _walkTargetLeft;
     private double _walkTargetTop;
     private double _walkSpeed = WalkSpeed;
-    private double _walkStuckSeconds;
+    private int _walkPullbackCount;
     private double _walkLastDistance = double.MaxValue;
     private SleepConfig _sleepConfig = SleepConfig.CreateDefault();
     private double _secondsSinceUserInteraction;
@@ -275,7 +275,7 @@ public partial class MainWindow : Window
         _walkTargetLeft = target.X;
         _walkTargetTop = target.Y;
         _hasWalkTarget = true;
-        _walkStuckSeconds = 0;
+        _walkPullbackCount = 0;
         _walkLastDistance = distance;
 
         if (Math.Abs(dx) > 1)
@@ -318,8 +318,9 @@ public partial class MainWindow : Window
             Top += dy / distance * step;
         }
 
-        // 用贴合尺寸钳制，避免动作位移撑大窗口后无法靠近边缘目标
-        ClampToWalkArea(useFittedFootprint: true);
+        var beforeLeft = Left;
+        var beforeTop = Top;
+        ClampToWalkArea();
 
         var afterDx = _walkTargetLeft - Left;
         var afterDy = _walkTargetTop - Top;
@@ -330,19 +331,21 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 贴边来回被拉：距离长时间不下降则结束本次走动
-        if (afterDistance >= _walkLastDistance - 0.5)
+        var pulled =
+            Math.Abs(Left - beforeLeft) > 0.5 || Math.Abs(Top - beforeTop) > 0.5;
+        if (pulled && afterDistance >= _walkLastDistance - 0.5)
         {
-            _walkStuckSeconds += delta;
-            if (_walkStuckSeconds >= 1.2)
+            // 被边界拉回且没更接近目标
+            _walkPullbackCount++;
+            if (_walkPullbackCount >= 4)
             {
                 FinishWalkAtTarget(snap: false);
                 return;
             }
         }
-        else
+        else if (afterDistance < _walkLastDistance - 1)
         {
-            _walkStuckSeconds = 0;
+            _walkPullbackCount = 0;
         }
 
         _walkLastDistance = afterDistance;
@@ -354,7 +357,7 @@ public partial class MainWindow : Window
         {
             Left = _walkTargetLeft;
             Top = _walkTargetTop;
-            ClampToWalkArea(useFittedFootprint: true);
+            ClampToWalkArea();
         }
 
         CancelWalkMovement();
@@ -365,7 +368,7 @@ public partial class MainWindow : Window
     private void CancelWalkMovement()
     {
         _hasWalkTarget = false;
-        _walkStuckSeconds = 0;
+        _walkPullbackCount = 0;
         _walkLastDistance = double.MaxValue;
     }
 
@@ -601,7 +604,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 仅在包围盒越出窗口时扩窗；向溢出侧扩展并保持脚底，避免左右居中导致贴边来回拉。
+    /// 仅在包围盒越出窗口时扩窗；向上扩展并保持窗口底边不动。
     /// </summary>
     private bool ExpandWindowIfClipped(global::Spine.Skeleton skeleton, float scale, float offsetX, float offsetY)
     {
@@ -619,13 +622,6 @@ public partial class MainWindow : Window
         var growLeft = Math.Max(0, RenderEdgePadding - screenLeft);
         var growRight = Math.Max(0, screenRight - (ActualWidth - RenderEdgePadding));
 
-        // 走动时动作位移常很大：不横向扩窗，避免与边界钳制打架
-        if (_stateMachine.Current == PetState.Walk || _hasWalkTarget)
-        {
-            growLeft = 0;
-            growRight = 0;
-        }
-
         if (growTop < 2 && growLeft < 2 && growRight < 2)
         {
             return false;
@@ -633,23 +629,7 @@ public partial class MainWindow : Window
 
         var newW = Math.Max(_fittedWidth, ActualWidth + growLeft + growRight);
         var newH = Math.Max(_fittedHeight, ActualHeight + growTop);
-        if (Math.Abs(newW - Width) < 1 && Math.Abs(newH - Height) < 1)
-        {
-            return false;
-        }
-
-        Width = newW;
-        Height = newH;
-        Left -= growLeft;
-        Top -= growTop;
-
-        // 走动中不因扩窗再钳回工作区（由 UpdateWalkMovement 用贴合尺寸钳制）
-        if (_stateMachine.Current != PetState.Walk && !_hasWalkTarget)
-        {
-            ClampToWorkingArea();
-        }
-
-        return true;
+        return ResizeKeepingBottomCenter(newW, newH);
     }
 
     private void ShrinkToFittedSize()
@@ -782,22 +762,18 @@ public partial class MainWindow : Window
 
     private void ClampToWorkingArea()
     {
-        ClampToArea(SystemParameters.WorkArea, useFittedFootprint: false);
+        ClampToArea(SystemParameters.WorkArea);
     }
 
-    private void ClampToWalkArea(bool useFittedFootprint = false)
+    private void ClampToWalkArea()
     {
-        ClampToArea(GetWalkArea(), useFittedFootprint);
+        ClampToArea(GetWalkArea());
     }
 
-    private void ClampToArea(Rect area, bool useFittedFootprint)
+    private void ClampToArea(Rect area)
     {
-        var width = useFittedFootprint && _fittedWidth > 0
-            ? _fittedWidth
-            : (ActualWidth > 0 ? ActualWidth : Width);
-        var height = useFittedFootprint && _fittedHeight > 0
-            ? _fittedHeight
-            : (ActualHeight > 0 ? ActualHeight : Height);
+        var width = ActualWidth > 0 ? ActualWidth : Width;
+        var height = ActualHeight > 0 ? ActualHeight : Height;
         var left = Left;
         var top = Top;
         WalkAreaResolver.ClampTopLeft(ref left, ref top, new System.Windows.Size(width, height), area);
