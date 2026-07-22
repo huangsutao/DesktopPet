@@ -11,6 +11,8 @@ public partial class MainWindow : Window
 {
     private const double BottomRightMargin = 24;
     private const double DragThreshold = 5;
+    private const float RenderBottomPadding = 8f;
+    private const float RenderEdgePadding = 8f;
 
     private readonly SpineRuntimeHost _runtime = new();
     private readonly WpfSkeletonRenderer _renderer = new();
@@ -18,6 +20,9 @@ public partial class MainWindow : Window
     private SettingsService? _settings;
     private TimeSpan _lastRenderTime;
     private bool _rendering;
+    private float[]? _boundsVertexBuffer;
+    private double _fittedWidth = 120;
+    private double _fittedHeight = 120;
 
     private System.Windows.Point _mouseDownInWindow;
     private bool _dragStarted;
@@ -99,6 +104,12 @@ public partial class MainWindow : Window
         {
             case PetState.Idle:
                 _runtime.PlayIdle();
+                // 只在动作结束缩回一次，绝不在渲染循环里缩
+                if (previous is PetState.Clicked or PetState.Dragging)
+                {
+                    ShrinkToFittedSize();
+                }
+
                 break;
             case PetState.Clicked:
                 _runtime.PlayClick();
@@ -122,17 +133,32 @@ public partial class MainWindow : Window
 
     private void FitWindowToSkeleton()
     {
-        if (_runtime.SkeletonData is null)
+        if (_runtime.Skeleton is null || _runtime.SkeletonData is null)
         {
             return;
         }
 
         var scale = (float)(_settings?.Config.Scale ?? 0.25);
-        var data = _runtime.SkeletonData;
-        var width = Math.Max(120, data.Width * scale + 24);
-        var height = Math.Max(120, data.Height * scale + 24);
-        Width = width;
-        Height = height;
+        _runtime.Skeleton.UpdateWorldTransform(global::Spine.Physics.Update);
+        _runtime.Skeleton.GetBounds(out _, out _, out var bw, out var bh, ref _boundsVertexBuffer);
+
+        if (IsValidBounds(bw, bh))
+        {
+            // 脚底锚点：余量加在头顶方向，脚下贴底，不产生任务栏空隙
+            const float pad = 12f;
+            const float jumpHeadroomFactor = 0.45f;
+            _fittedWidth = Math.Max(120, bw * scale + pad * 2);
+            _fittedHeight = Math.Max(120, bh * scale * (1f + jumpHeadroomFactor) + pad * 2);
+        }
+        else
+        {
+            var data = _runtime.SkeletonData;
+            _fittedWidth = Math.Max(120, data.Width * scale * 1.1 + 16);
+            _fittedHeight = Math.Max(120, data.Height * scale * 1.35 + 16);
+        }
+
+        Width = _fittedWidth;
+        Height = _fittedHeight;
     }
 
     private void StartRendering()
@@ -181,13 +207,22 @@ public partial class MainWindow : Window
 
         _runtime.Update(delta);
 
+        var scale = (float)(_settings?.Config.Scale ?? 0.25);
         var pixelW = Math.Max(1, (int)Math.Ceiling(ActualWidth));
         var pixelH = Math.Max(1, (int)Math.Ceiling(ActualHeight));
-        _renderer.EnsureSize(pixelW, pixelH);
 
-        var scale = (float)(_settings?.Config.Scale ?? 0.25);
+        // 固定脚底锚点；渲染循环只扩不缩，避免扩/缩振荡卡死 UI
         var offsetX = pixelW * 0.5f;
-        var offsetY = pixelH * 0.85f;
+        var offsetY = pixelH - RenderBottomPadding;
+        if (ExpandWindowIfClipped(_runtime.Skeleton, scale, offsetX, offsetY))
+        {
+            pixelW = Math.Max(1, (int)Math.Ceiling(ActualWidth));
+            pixelH = Math.Max(1, (int)Math.Ceiling(ActualHeight));
+            offsetX = pixelW * 0.5f;
+            offsetY = pixelH - RenderBottomPadding;
+        }
+
+        _renderer.EnsureSize(pixelW, pixelH);
         _renderer.Render(_runtime.Skeleton, scale, offsetX, offsetY);
 
         if (!ReferenceEquals(PetImage.Source, _renderer.ImageSource))
@@ -195,6 +230,60 @@ public partial class MainWindow : Window
             PetImage.Source = _renderer.ImageSource;
         }
     }
+
+    /// <summary>
+    /// 仅在包围盒越出窗口时扩窗；向上扩展并保持窗口底边不动。
+    /// </summary>
+    private bool ExpandWindowIfClipped(global::Spine.Skeleton skeleton, float scale, float offsetX, float offsetY)
+    {
+        skeleton.GetBounds(out var bx, out var by, out var bw, out var bh, ref _boundsVertexBuffer);
+        if (!IsValidBounds(bw, bh))
+        {
+            return false;
+        }
+
+        var screenLeft = bx * scale + offsetX;
+        var screenRight = (bx + bw) * scale + offsetX;
+        var screenTop = -(by + bh) * scale + offsetY;
+
+        var growTop = Math.Max(0, RenderEdgePadding - screenTop);
+        var growLeft = Math.Max(0, RenderEdgePadding - screenLeft);
+        var growRight = Math.Max(0, screenRight - (ActualWidth - RenderEdgePadding));
+
+        if (growTop < 2 && growLeft < 2 && growRight < 2)
+        {
+            return false;
+        }
+
+        var newW = Math.Max(_fittedWidth, ActualWidth + growLeft + growRight);
+        var newH = Math.Max(_fittedHeight, ActualHeight + growTop);
+        return ResizeKeepingBottomCenter(newW, newH);
+    }
+
+    private void ShrinkToFittedSize()
+    {
+        ResizeKeepingBottomCenter(_fittedWidth, _fittedHeight);
+    }
+
+    private bool ResizeKeepingBottomCenter(double newW, double newH)
+    {
+        if (Math.Abs(newW - Width) < 1 && Math.Abs(newH - Height) < 1)
+        {
+            return false;
+        }
+
+        var bottom = Top + ActualHeight;
+        var centerX = Left + ActualWidth / 2;
+        Width = newW;
+        Height = newH;
+        Left = centerX - newW / 2;
+        Top = bottom - newH;
+        ClampToWorkingArea();
+        return true;
+    }
+
+    private static bool IsValidBounds(float bw, float bh) =>
+        bw > 1 && bh > 1 && bw < 5000 && bh < 5000;
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
