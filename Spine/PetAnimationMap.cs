@@ -173,6 +173,7 @@ public static class PetAnimationMap
                 "morningstar pose", "idle-turn", "run-to-idle",
             ],
             Drag = ["fall", "jump", "hit", "idle", "run"],
+            Walk = ["walk", "run", "sneak"],
         },
         Pets =
         [
@@ -181,22 +182,26 @@ public static class PetAnimationMap
                 Match = "alien",
                 Idle = ["run"],
                 Click = ["hit", "jump", "run", "death"],
+                Walk = ["run"],
             },
             new PetAnimationProfile
             {
                 Match = "hero",
                 Click = ["attack", "jump", "crouch", "walk", "run", "morningstar pose"],
                 Drag = ["fall", "jump"],
+                Walk = ["walk", "run"],
             },
             new PetAnimationProfile
             {
                 Match = "spineboy",
                 Click = ["jump", "shoot", "portal", "aim", "hoverboard", "walk", "run"],
+                Walk = ["walk", "run"],
             },
             new PetAnimationProfile
             {
                 Match = "stretchyman",
                 Click = ["sneak", "idle"],
+                Walk = ["sneak"],
             },
         ],
     };
@@ -207,4 +212,5 @@ public enum PetAction
     Idle,
     Click,
     Drag,
+    Walk,
 }

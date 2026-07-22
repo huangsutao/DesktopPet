@@ -18,11 +18,14 @@ public sealed class PetActionCandidates
 
     public List<string> Drag { get; set; } = [];
 
+    public List<string> Walk { get; set; } = [];
+
     public IReadOnlyList<string> For(PetAction action) => action switch
     {
         PetAction.Idle => Idle,
         PetAction.Click => Click,
         PetAction.Drag => Drag,
+        PetAction.Walk => Walk,
         _ => Idle,
     };
 }
@@ -40,11 +43,14 @@ public sealed class PetAnimationProfile
 
     public List<string>? Drag { get; set; }
 
+    public List<string>? Walk { get; set; }
+
     public IEnumerable<string> For(PetAction action) => action switch
     {
         PetAction.Idle => Idle ?? [],
         PetAction.Click => Click ?? [],
         PetAction.Drag => Drag ?? [],
+        PetAction.Walk => Walk ?? [],
         _ => [],
     };
 }

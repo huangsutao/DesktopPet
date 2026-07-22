@@ -84,6 +84,42 @@ public sealed class SpineRuntimeHost : IDisposable
         _animationController.PlayDrag(AnimationState, SkeletonData, LoadedPetName);
     }
 
+    public void PlayWalk(bool preferRun = false)
+    {
+        if (AnimationState is null || SkeletonData is null)
+        {
+            return;
+        }
+
+        _animationController.PlayWalk(AnimationState, SkeletonData, LoadedPetName, preferRun);
+    }
+
+    public void PlayRandomAction()
+    {
+        if (AnimationState is null || SkeletonData is null)
+        {
+            return;
+        }
+
+        _animationController.PlayRandomAction(AnimationState, SkeletonData, LoadedPetName);
+    }
+
+    public void SetFacing(bool faceRight)
+    {
+        if (Skeleton is null)
+        {
+            return;
+        }
+
+        var abs = Math.Abs(Skeleton.ScaleX);
+        if (abs < 0.001f)
+        {
+            abs = 1f;
+        }
+
+        Skeleton.ScaleX = faceRight ? abs : -abs;
+    }
+
     public void Update(float deltaSeconds)
     {
         if (!IsLoaded || Skeleton is null || AnimationState is null)

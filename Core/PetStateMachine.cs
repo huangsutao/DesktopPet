@@ -19,6 +19,37 @@ public sealed class PetStateMachine
         return true;
     }
 
+    public bool TryStartWalk()
+    {
+        if (Current != PetState.Idle)
+        {
+            return false;
+        }
+
+        TransitionTo(PetState.Walk);
+        return true;
+    }
+
+    public void EndWalk()
+    {
+        if (Current == PetState.Walk)
+        {
+            TransitionTo(PetState.Idle);
+        }
+    }
+
+    /// <summary>Autonomy one-shot action (reuses Clicked + animation-complete → Idle).</summary>
+    public bool TryStartAct()
+    {
+        if (Current != PetState.Idle)
+        {
+            return false;
+        }
+
+        TransitionTo(PetState.Clicked);
+        return true;
+    }
+
     public bool TryStartDrag()
     {
         if (Current == PetState.Dragging)

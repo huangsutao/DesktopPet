@@ -13,10 +13,16 @@ public partial class MainWindow : Window
     private const double DragThreshold = 5;
     private const float RenderBottomPadding = 8f;
     private const float RenderEdgePadding = 8f;
+    private const double WalkSpeed = 90;
+    private const double RunSpeed = 150;
+    private const double RunDistanceThreshold = 280;
+    private const double ArriveEpsilon = 2;
 
     private readonly SpineRuntimeHost _runtime = new();
     private readonly WpfSkeletonRenderer _renderer = new();
     private readonly PetStateMachine _stateMachine = new();
+    private readonly AutonomyScheduler _autonomy = new();
+    private readonly Random _rng = new();
     private SettingsService? _settings;
     private TimeSpan _lastRenderTime;
     private bool _rendering;
@@ -28,6 +34,13 @@ public partial class MainWindow : Window
     private bool _dragStarted;
     private bool _mouseCaptured;
 
+    private bool _autonomyAction;
+    private bool _preferRunWalk;
+    private bool _hasWalkTarget;
+    private double _walkTargetLeft;
+    private double _walkTargetTop;
+    private double _walkSpeed = WalkSpeed;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -36,6 +49,8 @@ public partial class MainWindow : Window
         Closed += (_, _) => Cleanup();
         _stateMachine.StateChanged += OnPetStateChanged;
         _runtime.AnimationCompleted += OnAnimationCompleted;
+        _autonomy.RequestWalk += OnAutonomyRequestWalk;
+        _autonomy.RequestAct += OnAutonomyRequestAct;
     }
 
     public void AttachSettings(SettingsService settings)
@@ -82,8 +97,10 @@ public partial class MainWindow : Window
         var petName = _settings?.Config.PetName ?? "default";
         try
         {
+            CancelWalkMovement();
             _runtime.LoadPet(petName);
             _stateMachine.Reset();
+            _autonomy.Reset();
             FitWindowToSkeleton();
             PlaceAtBottomRight();
             ClampToWorkingArea();
@@ -110,9 +127,28 @@ public partial class MainWindow : Window
                 }
 
                 break;
-            case PetState.Clicked:
-                _runtime.PlayClick();
+            case PetState.Walk:
+                _runtime.PlayWalk(_preferRunWalk);
                 break;
+            case PetState.Clicked:
+                CancelWalkMovement();
+                if (_autonomyAction)
+                {
+                    _runtime.PlayRandomAction();
+                    _autonomyAction = false;
+                }
+                else
+                {
+                    _runtime.PlayClick();
+                    _autonomy.Interrupt();
+                }
+
+                break;
+        }
+
+        if (previous == PetState.Walk && next != PetState.Walk)
+        {
+            CancelWalkMovement();
         }
     }
 
@@ -120,11 +156,147 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
-            if (_stateMachine.Current == PetState.Clicked)
+            if (_stateMachine.Current != PetState.Clicked)
             {
-                _stateMachine.EndClick();
+                return;
+            }
+
+            _stateMachine.EndClick();
+            _autonomy.NotifyActFinished();
+        });
+    }
+
+    private void OnAutonomyRequestWalk()
+    {
+        Dispatcher.Invoke(BeginAutonomyWalk);
+    }
+
+    private void OnAutonomyRequestAct()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (!_autonomy.IsExpectingAct || _dragStarted || _mouseCaptured)
+            {
+                if (_autonomy.IsExpectingAct)
+                {
+                    _autonomy.Interrupt();
+                }
+
+                return;
+            }
+
+            _autonomyAction = true;
+            if (!_stateMachine.TryStartAct())
+            {
+                _autonomyAction = false;
+                _autonomy.Interrupt();
             }
         });
+    }
+
+    private void BeginAutonomyWalk()
+    {
+        if (!_autonomy.IsExpectingWalk || _dragStarted || _mouseCaptured || !_runtime.IsLoaded)
+        {
+            if (_autonomy.IsExpectingWalk)
+            {
+                _autonomy.Interrupt();
+            }
+
+            return;
+        }
+
+        var area = GetWalkArea();
+        var size = new System.Windows.Size(
+            ActualWidth > 0 ? ActualWidth : Width,
+            ActualHeight > 0 ? ActualHeight : Height);
+        var target = WalkAreaResolver.PickRandomTopLeft(area, size, _rng);
+        var dx = target.X - Left;
+        var dy = target.Y - Top;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
+
+        if (distance < 40)
+        {
+            // Too close — skip this walk and wait again.
+            _autonomy.NotifyWalkFinished();
+            return;
+        }
+
+        _preferRunWalk = distance >= RunDistanceThreshold;
+        _walkSpeed = _preferRunWalk ? RunSpeed : WalkSpeed;
+        _walkTargetLeft = target.X;
+        _walkTargetTop = target.Y;
+        _hasWalkTarget = true;
+
+        if (Math.Abs(dx) > 1)
+        {
+            _runtime.SetFacing(dx > 0);
+        }
+
+        if (!_stateMachine.TryStartWalk())
+        {
+            CancelWalkMovement();
+            _autonomy.Interrupt();
+        }
+    }
+
+    private void UpdateWalkMovement(float delta)
+    {
+        if (!_hasWalkTarget || _stateMachine.Current != PetState.Walk)
+        {
+            return;
+        }
+
+        var dx = _walkTargetLeft - Left;
+        var dy = _walkTargetTop - Top;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
+        if (distance <= ArriveEpsilon)
+        {
+            Left = _walkTargetLeft;
+            Top = _walkTargetTop;
+            ClampToWalkArea();
+            CancelWalkMovement();
+            _stateMachine.EndWalk();
+            _autonomy.NotifyWalkFinished();
+            return;
+        }
+
+        var step = _walkSpeed * delta;
+        if (step >= distance)
+        {
+            Left = _walkTargetLeft;
+            Top = _walkTargetTop;
+        }
+        else
+        {
+            Left += dx / distance * step;
+            Top += dy / distance * step;
+        }
+
+        ClampToWalkArea();
+    }
+
+    private void CancelWalkMovement()
+    {
+        _hasWalkTarget = false;
+    }
+
+    private void InterruptAutonomyForUser()
+    {
+        CancelWalkMovement();
+        if (_stateMachine.Current == PetState.Walk)
+        {
+            _stateMachine.EndWalk();
+        }
+
+        _autonomy.Interrupt();
+        _autonomyAction = false;
+    }
+
+    private Rect GetWalkArea()
+    {
+        var cfg = _settings?.Config.WalkArea ?? new WalkAreaConfig();
+        return WalkAreaResolver.Resolve(cfg);
     }
 
     private void FitWindowToSkeleton()
@@ -199,6 +371,12 @@ public partial class MainWindow : Window
         if (delta <= 0 || delta > 0.1f)
         {
             delta = 1f / 60f;
+        }
+
+        if (!_dragStarted)
+        {
+            _autonomy.Tick(delta);
+            UpdateWalkMovement(delta);
         }
 
         _runtime.Update(delta);
@@ -308,7 +486,7 @@ public partial class MainWindow : Window
         if (!_dragStarted && (Math.Abs(dx) > DragThreshold || Math.Abs(dy) > DragThreshold))
         {
             _dragStarted = true;
-            // 拖拽只移动窗口，不切换状态、不播动作
+            InterruptAutonomyForUser();
         }
 
         if (!_dragStarted)
@@ -339,6 +517,7 @@ public partial class MainWindow : Window
         }
         else
         {
+            InterruptAutonomyForUser();
             _stateMachine.TryClick();
         }
 
@@ -368,26 +547,23 @@ public partial class MainWindow : Window
 
     private void ClampToWorkingArea()
     {
-        var work = SystemParameters.WorkArea;
-        if (Left < work.Left)
-        {
-            Left = work.Left;
-        }
+        ClampToArea(SystemParameters.WorkArea);
+    }
 
-        if (Top < work.Top)
-        {
-            Top = work.Top;
-        }
+    private void ClampToWalkArea()
+    {
+        ClampToArea(GetWalkArea());
+    }
 
-        if (Left + ActualWidth > work.Right)
-        {
-            Left = work.Right - ActualWidth;
-        }
-
-        if (Top + ActualHeight > work.Bottom)
-        {
-            Top = work.Bottom - ActualHeight;
-        }
+    private void ClampToArea(Rect area)
+    {
+        var width = ActualWidth > 0 ? ActualWidth : Width;
+        var height = ActualHeight > 0 ? ActualHeight : Height;
+        var left = Left;
+        var top = Top;
+        WalkAreaResolver.ClampTopLeft(ref left, ref top, new System.Windows.Size(width, height), area);
+        Left = left;
+        Top = top;
     }
 
     private void Cleanup()
@@ -395,6 +571,8 @@ public partial class MainWindow : Window
         StopRendering();
         _stateMachine.StateChanged -= OnPetStateChanged;
         _runtime.AnimationCompleted -= OnAnimationCompleted;
+        _autonomy.RequestWalk -= OnAutonomyRequestWalk;
+        _autonomy.RequestAct -= OnAutonomyRequestAct;
         if (_settings is not null)
         {
             _settings.Changed -= OnSettingsChanged;
