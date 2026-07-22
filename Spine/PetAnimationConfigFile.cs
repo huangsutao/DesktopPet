@@ -5,6 +5,9 @@ public sealed class PetAnimationConfigFile
 {
     public bool IncludeAllNonIdleOnClick { get; set; } = true;
 
+    /// <summary>Default speech-bubble lines (fallback for all pets).</summary>
+    public List<string> BubbleLines { get; set; } = [];
+
     public PetActionCandidates Defaults { get; set; } = new();
 
     public List<PetAnimationProfile> Pets { get; set; } = [];
@@ -49,6 +52,9 @@ public sealed class PetAnimationProfile
     public List<string>? Walk { get; set; }
 
     public List<string>? Sleep { get; set; }
+
+    /// <summary>Optional per-pet bubble lines; falls back to root bubbleLines.</summary>
+    public List<string>? BubbleLines { get; set; }
 
     public IEnumerable<string> For(PetAction action) => action switch
     {

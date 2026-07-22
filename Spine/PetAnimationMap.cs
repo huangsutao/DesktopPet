@@ -36,6 +36,47 @@ public static class PetAnimationMap
         ?? (data.Animations.Count > 0 ? data.Animations.Items[0].Name : null);
 
     /// <summary>
+    /// Speech bubble lines from pet-animations.json (pet override → root → built-in).
+    /// </summary>
+    public static IReadOnlyList<string> GetBubbleLines(string? petFolderName = null)
+    {
+        var config = EnsureLoaded();
+        foreach (var profile in config.Pets)
+        {
+            if (string.IsNullOrWhiteSpace(profile.Match) ||
+                string.IsNullOrEmpty(petFolderName) ||
+                !petFolderName.Contains(profile.Match, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (profile.BubbleLines is { Count: > 0 })
+            {
+                return SanitizeLines(profile.BubbleLines);
+            }
+
+            break;
+        }
+
+        if (config.BubbleLines is { Count: > 0 })
+        {
+            return SanitizeLines(config.BubbleLines);
+        }
+
+        return BuiltInBubbleLines;
+    }
+
+    private static IReadOnlyList<string> SanitizeLines(IEnumerable<string> lines) =>
+        lines.Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim()).ToList();
+
+    private static readonly string[] BuiltInBubbleLines =
+    [
+        "今天也要加油呀～",
+        "摸鱼一时爽，一直摸鱼一直爽。",
+        "我在这儿陪着你呢。",
+    ];
+
+    /// <summary>
     /// All animations that can be used for the logical action (order preserved, duplicates removed).
     /// </summary>
     public static IReadOnlyList<string> ListAvailable(
@@ -163,6 +204,7 @@ public static class PetAnimationMap
     private static PetAnimationConfigFile CreateBuiltInFallback() => new()
     {
         IncludeAllNonIdleOnClick = true,
+        BubbleLines = BuiltInBubbleLines.ToList(),
         Defaults = new PetActionCandidates
         {
             Idle = ["idle", "Idle", "stand", "breath"],

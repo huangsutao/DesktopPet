@@ -121,6 +121,7 @@ public partial class MainWindow : Window
             _runtime.LoadPet(petName);
             _stateMachine.Reset();
             _autonomy.Reset();
+            _bubbles.SetLines(PetAnimationMap.GetBubbleLines(petName));
             _bubbles.Reset();
             HideSpeechBubbleImmediate();
             NoteUserInteraction();
