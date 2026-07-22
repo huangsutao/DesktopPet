@@ -18,6 +18,9 @@ public sealed class TrayIconService : IDisposable
     private Icon? _icon;
     private ToolStripMenuItem? _switchPetMenu;
 
+    /// <summary>True while the tray context menu is visible.</summary>
+    public static bool IsMenuOpen { get; private set; }
+
     public TrayIconService(Window window, SettingsService settings)
     {
         _window = window;
@@ -51,6 +54,7 @@ public sealed class TrayIconService : IDisposable
         if (_notifyIcon is not null)
         {
             _notifyIcon.Visible = false;
+            IsMenuOpen = false;
             _notifyIcon.Dispose();
             _notifyIcon = null;
         }
@@ -62,6 +66,8 @@ public sealed class TrayIconService : IDisposable
     private ContextMenuStrip BuildMenu()
     {
         var menu = new ContextMenuStrip();
+        menu.Opening += (_, _) => IsMenuOpen = true;
+        menu.Closed += (_, _) => IsMenuOpen = false;
         menu.Items.Add("显示", null, (_, _) => ShowWindow());
         menu.Items.Add("隐藏", null, (_, _) => HideWindow());
         menu.Items.Add(new ToolStripSeparator());
@@ -116,7 +122,8 @@ public sealed class TrayIconService : IDisposable
 
     private void OpenSettings()
     {
-        SettingsWindow.ShowOrActivate(_settings, _window.IsVisible ? _window : null);
+        // 托盘菜单在 WinForms 线程，交由设置窗自行切回 WPF UI 线程
+        SettingsWindow.ShowOrActivate(_settings);
     }
 
     private void OnSettingsChanged()

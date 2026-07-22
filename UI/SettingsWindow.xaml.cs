@@ -18,22 +18,32 @@ public partial class SettingsWindow : Window
         LoadFromConfig();
     }
 
+    public static bool IsOpen => _instance is not null;
+
     public static void ShowOrActivate(SettingsService settings, Window? owner = null)
     {
+        var app = System.Windows.Application.Current;
+        if (app?.Dispatcher is not null && !app.Dispatcher.CheckAccess())
+        {
+            app.Dispatcher.BeginInvoke(() => ShowOrActivate(settings, owner));
+            return;
+        }
+
         if (_instance is not null)
         {
             _instance.Activate();
             return;
         }
 
-        _instance = new SettingsWindow(settings);
-        if (owner is not null)
+        _instance = new SettingsWindow(settings)
         {
-            _instance.Owner = owner;
-        }
+            // 不挂 Owner：宠物窗每帧移动时，归属窗体会卡住设置窗输入
+            Topmost = true,
+        };
 
         _instance.Closed += (_, _) => _instance = null;
         _instance.Show();
+        _instance.Activate();
     }
 
     private void LoadFromConfig()

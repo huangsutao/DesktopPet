@@ -4,6 +4,7 @@ using System.Windows.Media;
 using DesktopPet.Core;
 using DesktopPet.Services;
 using DesktopPet.Spine;
+using DesktopPet.UI;
 
 namespace DesktopPet;
 
@@ -77,7 +78,7 @@ public partial class MainWindow : Window
 
     private void OnSettingsChanged()
     {
-        Dispatcher.Invoke(() =>
+        RunOnUi(() =>
         {
             Topmost = _settings?.Config.Topmost ?? Topmost;
             _autonomy.ApplyConfig(_settings?.Config.Autonomy);
@@ -156,7 +157,7 @@ public partial class MainWindow : Window
 
     private void OnAnimationCompleted()
     {
-        Dispatcher.Invoke(() =>
+        RunOnUi(() =>
         {
             if (_stateMachine.Current != PetState.Clicked)
             {
@@ -168,14 +169,11 @@ public partial class MainWindow : Window
         });
     }
 
-    private void OnAutonomyRequestWalk()
-    {
-        Dispatcher.Invoke(BeginAutonomyWalk);
-    }
+    private void OnAutonomyRequestWalk() => RunOnUi(BeginAutonomyWalk);
 
     private void OnAutonomyRequestAct()
     {
-        Dispatcher.Invoke(() =>
+        RunOnUi(() =>
         {
             if (!_autonomy.IsExpectingAct || _dragStarted || _mouseCaptured)
             {
@@ -194,6 +192,18 @@ public partial class MainWindow : Window
                 _autonomy.Interrupt();
             }
         });
+    }
+
+    private void RunOnUi(Action action)
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            Dispatcher.BeginInvoke(action);
+        }
     }
 
     private void BeginAutonomyWalk()
@@ -375,7 +385,23 @@ public partial class MainWindow : Window
             delta = 1f / 60f;
         }
 
-        if (!_dragStarted)
+        // 置顶窗每帧改位置会卡住托盘菜单 / 设置窗，打开期间暂停位移
+        if (_dragStarted)
+        {
+            // user drag owns movement
+        }
+        else if (SettingsWindow.IsOpen)
+        {
+            if (_hasWalkTarget)
+            {
+                InterruptAutonomyForUser();
+            }
+        }
+        else if (TrayIconService.IsMenuOpen)
+        {
+            // soft-pause: keep walk target, resume after menu closes
+        }
+        else
         {
             _autonomy.Tick(delta);
             UpdateWalkMovement(delta);
