@@ -10,6 +10,7 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
     <!-- P0 占位：后续由 Spine 渲染替换 -->
     <Grid>

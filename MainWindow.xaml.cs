@@ -5,10 +5,16 @@ namespace DesktopPet;
 
 public partial class MainWindow : Window
 {
+    private const double BottomRightMargin = 24;
+
     public MainWindow()
     {
         InitializeComponent();
-        Loaded += (_, _) => ClampToWorkingArea();
+        Loaded += (_, _) =>
+        {
+            PlaceAtBottomRight();
+            ClampToWorkingArea();
+        };
     }
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -18,6 +24,15 @@ public partial class MainWindow : Window
             DragMove();
             ClampToWorkingArea();
         }
+    }
+
+    private void PlaceAtBottomRight()
+    {
+        var work = SystemParameters.WorkArea;
+        var width = ActualWidth > 0 ? ActualWidth : Width;
+        var height = ActualHeight > 0 ? ActualHeight : Height;
+        Left = work.Right - width - BottomRightMargin;
+        Top = work.Bottom - height - BottomRightMargin;
     }
 
     private void ClampToWorkingArea()
