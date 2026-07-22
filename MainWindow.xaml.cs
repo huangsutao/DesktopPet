@@ -597,9 +597,19 @@ public partial class MainWindow : Window
             bubbleH = Math.Max(36, SpeechBubble.DesiredSize.Height);
         }
 
-        const double gap = 2;
+        // 留出头发/饰品高度，避免尖角压住头顶
+        const double gap = 16;
         var top = headTop - bubbleH - gap;
-        top = Math.Clamp(top, 2, Math.Max(2, ActualHeight - bubbleH - 4));
+        if (top < 4)
+        {
+            // 头顶空间不够时向上扩窗，而不是把气泡压到头发上
+            var need = 4 - top;
+            Height += need;
+            Top -= need;
+            top = 4;
+        }
+
+        top = Math.Min(top, Math.Max(4, ActualHeight - bubbleH - 4));
         SpeechBubble.Margin = new Thickness(0, top, 0, 0);
     }
 
