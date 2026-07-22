@@ -1,0 +1,32 @@
+{
+  "includeAllNonIdleOnClick": true,
+  "defaults": {
+    "idle": [ "idle", "Idle", "stand", "breath" ],
+    "click": [
+      "jump", "hit", "attack", "shoot", "portal", "aim",
+      "hoverboard", "walk", "run", "sneak", "crouch",
+      "morningstar pose", "idle-turn", "run-to-idle"
+    ],
+    "drag": [ "fall", "jump", "hit", "idle", "run" ]
+  },
+  "pets": [
+    {
+      "match": "alien",
+      "idle": [ "run" ],
+      "click": [ "hit", "jump", "run", "death" ]
+    },
+    {
+      "match": "hero",
+      "click": [ "attack", "jump", "crouch", "walk", "run", "morningstar pose" ],
+      "drag": [ "fall", "jump" ]
+    },
+    {
+      "match": "spineboy",
+      "click": [ "jump", "shoot", "portal", "aim", "hoverboard", "walk", "run" ]
+    },
+    {
+      "match": "stretchyman",
+      "click": [ "sneak", "idle" ]
+    }
+  ]
+}

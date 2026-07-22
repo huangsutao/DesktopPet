@@ -49,6 +49,25 @@ Assets/Pets/{petName}/
 
 在配置中指定宠物名（默认 `default`）。**Spine 编辑器导出版本必须与引用的 spine-csharp Runtime 版本一致。**
 
+### 动作映射配置
+
+程序根目录（输出目录）下的 `pet-animations.json` 控制 idle / 点击轮换 / 拖拽候选动画，**增改素材只需改此文件**：
+
+```json
+{
+  "includeAllNonIdleOnClick": true,
+  "defaults": { "idle": ["idle"], "click": ["jump"], "drag": [] },
+  "pets": [
+    { "match": "spineboy", "click": ["jump", "shoot", "portal"] }
+  ]
+}
+```
+
+- `defaults`：所有形象的通用候选（按顺序匹配骨架里真实存在的动画名）
+- `pets[].match`：与骨骼文件名或宠物文件夹名做包含匹配（忽略大小写）
+- `includeAllNonIdleOnClick`：为 true 时，点击还会轮换该骨架里其余非 idle 动画
+- 修改后重启程序生效（也可后续做成热加载）
+
 ## 项目结构
 
 ```text

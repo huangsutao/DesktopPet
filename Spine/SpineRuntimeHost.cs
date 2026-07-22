@@ -47,7 +47,8 @@ public sealed class SpineRuntimeHost : IDisposable
         _completeHandler = _ => AnimationCompleted?.Invoke();
         AnimationState.Complete += _completeHandler;
 
-        _animationController.PlayIdle(AnimationState, SkeletonData);
+        _animationController.ResetCycle();
+        _animationController.PlayIdle(AnimationState, SkeletonData, petName);
 
         LoadedPetName = petName;
         IsLoaded = true;
@@ -60,7 +61,7 @@ public sealed class SpineRuntimeHost : IDisposable
             return;
         }
 
-        _animationController.PlayIdle(AnimationState, SkeletonData);
+        _animationController.PlayIdle(AnimationState, SkeletonData, LoadedPetName);
     }
 
     public void PlayClick()
@@ -70,7 +71,7 @@ public sealed class SpineRuntimeHost : IDisposable
             return;
         }
 
-        _animationController.PlayClick(AnimationState, SkeletonData);
+        _animationController.PlayClick(AnimationState, SkeletonData, LoadedPetName);
     }
 
     public void PlayDrag()
@@ -80,7 +81,7 @@ public sealed class SpineRuntimeHost : IDisposable
             return;
         }
 
-        _animationController.PlayDrag(AnimationState, SkeletonData);
+        _animationController.PlayDrag(AnimationState, SkeletonData, LoadedPetName);
     }
 
     public void Update(float deltaSeconds)

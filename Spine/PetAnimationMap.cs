@@ -1,25 +1,99 @@
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Spine;
 
 namespace DesktopPet.Spine;
 
 /// <summary>
-/// Resolves logical pet actions to concrete Spine animation names for each pet.
+/// Resolves logical pet actions to Spine animation names via pet-animations.json.
 /// </summary>
 public static class PetAnimationMap
 {
-    private static readonly string[] IdleCandidates =
-        ["idle", "Idle", "stand", "breath", "walk", "run", "sneak", "hoverboard"];
-
-    private static readonly string[] ClickCandidates =
-        ["jump", "hit", "attack", "shoot", "portal", "morningstar pose"];
-
-    private static readonly string[] DragCandidates =
-        ["fall", "jump", "hit", "idle", "run"];
-
-    public static string? Resolve(SkeletonData data, PetAction action)
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        var preferred = PreferForPet(data.Name, action);
-        foreach (var name in preferred.Concat(Candidates(action)))
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+    };
+
+    private static PetAnimationConfigFile? _config;
+    private static string? _loadedPath;
+
+    public static string ConfigFileName { get; } = "pet-animations.json";
+
+    public static void Reload()
+    {
+        _config = null;
+        _loadedPath = null;
+        EnsureLoaded();
+    }
+
+    public static string? Resolve(SkeletonData data, PetAction action, string? petFolderName = null) =>
+        ListAvailable(data, action, petFolderName).FirstOrDefault()
+        ?? (data.Animations.Count > 0 ? data.Animations.Items[0].Name : null);
+
+    /// <summary>
+    /// All animations that can be used for the logical action (order preserved, duplicates removed).
+    /// </summary>
+    public static IReadOnlyList<string> ListAvailable(
+        SkeletonData data,
+        PetAction action,
+        string? petFolderName = null)
+    {
+        var config = EnsureLoaded();
+        var names = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        void TryAdd(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name) ||
+                data.FindAnimation(name) is null ||
+                !seen.Add(name))
+            {
+                return;
+            }
+
+            names.Add(name);
+        }
+
+        foreach (var name in PreferForPet(config, data.Name, petFolderName, action))
+        {
+            TryAdd(name);
+        }
+
+        foreach (var name in config.Defaults.For(action))
+        {
+            TryAdd(name);
+        }
+
+        if (action == PetAction.Click && config.IncludeAllNonIdleOnClick)
+        {
+            var idleName = ResolveIdleName(config, data, petFolderName);
+            foreach (var anim in data.Animations)
+            {
+                if (idleName is not null &&
+                    string.Equals(anim.Name, idleName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                TryAdd(anim.Name);
+            }
+        }
+
+        return names;
+    }
+
+    private static string? ResolveIdleName(
+        PetAnimationConfigFile config,
+        SkeletonData data,
+        string? petFolderName)
+    {
+        foreach (var name in PreferForPet(config, data.Name, petFolderName, PetAction.Idle)
+                     .Concat(config.Defaults.Idle))
         {
             if (data.FindAnimation(name) is not null)
             {
@@ -27,30 +101,104 @@ public static class PetAnimationMap
             }
         }
 
-        return data.Animations.Count > 0 ? data.Animations.Items[0].Name : null;
+        return null;
     }
 
-    private static IEnumerable<string> PreferForPet(string? skeletonName, PetAction action)
+    private static IEnumerable<string> PreferForPet(
+        PetAnimationConfigFile config,
+        string? skeletonName,
+        string? petFolderName,
+        PetAction action)
     {
-        var key = (skeletonName ?? string.Empty).ToLowerInvariant();
-        return (key, action) switch
+        foreach (var profile in config.Pets)
         {
-            (var n, PetAction.Idle) when n.Contains("alien") => ["run", "jump"],
-            (var n, PetAction.Click) when n.Contains("alien") => ["hit", "jump"],
-            (var n, PetAction.Click) when n.Contains("hero") => ["attack", "jump"],
-            (var n, PetAction.Click) when n.Contains("spineboy") || n.Contains("default") => ["jump", "shoot"],
-            (var n, PetAction.Click) when n.Contains("stretchyman") => ["sneak", "idle"],
-            (var n, PetAction.Drag) when n.Contains("hero") => ["fall", "jump"],
-            _ => Array.Empty<string>(),
-        };
+            if (string.IsNullOrWhiteSpace(profile.Match))
+            {
+                continue;
+            }
+
+            if (Matches(skeletonName, profile.Match) || Matches(petFolderName, profile.Match))
+            {
+                return profile.For(action);
+            }
+        }
+
+        return [];
     }
 
-    private static string[] Candidates(PetAction action) => action switch
+    private static bool Matches(string? haystack, string match) =>
+        !string.IsNullOrEmpty(haystack) &&
+        haystack.Contains(match, StringComparison.OrdinalIgnoreCase);
+
+    private static PetAnimationConfigFile EnsureLoaded()
     {
-        PetAction.Idle => IdleCandidates,
-        PetAction.Click => ClickCandidates,
-        PetAction.Drag => DragCandidates,
-        _ => IdleCandidates,
+        if (_config is not null)
+        {
+            return _config;
+        }
+
+        var path = Path.Combine(AppContext.BaseDirectory, ConfigFileName);
+        _loadedPath = path;
+
+        if (File.Exists(path))
+        {
+            try
+            {
+                var json = File.ReadAllText(path);
+                _config = JsonSerializer.Deserialize<PetAnimationConfigFile>(json, JsonOptions)
+                          ?? CreateBuiltInFallback();
+                return _config;
+            }
+            catch
+            {
+                // Fall through to built-in defaults.
+            }
+        }
+
+        _config = CreateBuiltInFallback();
+        return _config;
+    }
+
+    /// <summary>Used only when pet-animations.json is missing or invalid.</summary>
+    private static PetAnimationConfigFile CreateBuiltInFallback() => new()
+    {
+        IncludeAllNonIdleOnClick = true,
+        Defaults = new PetActionCandidates
+        {
+            Idle = ["idle", "Idle", "stand", "breath"],
+            Click =
+            [
+                "jump", "hit", "attack", "shoot", "portal", "aim",
+                "hoverboard", "walk", "run", "sneak", "crouch",
+                "morningstar pose", "idle-turn", "run-to-idle",
+            ],
+            Drag = ["fall", "jump", "hit", "idle", "run"],
+        },
+        Pets =
+        [
+            new PetAnimationProfile
+            {
+                Match = "alien",
+                Idle = ["run"],
+                Click = ["hit", "jump", "run", "death"],
+            },
+            new PetAnimationProfile
+            {
+                Match = "hero",
+                Click = ["attack", "jump", "crouch", "walk", "run", "morningstar pose"],
+                Drag = ["fall", "jump"],
+            },
+            new PetAnimationProfile
+            {
+                Match = "spineboy",
+                Click = ["jump", "shoot", "portal", "aim", "hoverboard", "walk", "run"],
+            },
+            new PetAnimationProfile
+            {
+                Match = "stretchyman",
+                Click = ["sneak", "idle"],
+            },
+        ],
     };
 }
 
