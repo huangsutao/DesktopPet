@@ -41,6 +41,8 @@ public partial class MainWindow : Window
     private double _walkTargetLeft;
     private double _walkTargetTop;
     private double _walkSpeed = WalkSpeed;
+    private SleepConfig _sleepConfig = SleepConfig.CreateDefault();
+    private double _secondsSinceUserInteraction;
 
     public MainWindow()
     {
@@ -64,6 +66,8 @@ public partial class MainWindow : Window
         _settings = settings;
         _settings.Changed += OnSettingsChanged;
         _autonomy.ApplyConfig(_settings.Config.Autonomy);
+        _sleepConfig = SleepConfig.Normalize(_settings.Config.Sleep);
+        NoteUserInteraction();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -82,6 +86,12 @@ public partial class MainWindow : Window
         {
             Topmost = _settings?.Config.Topmost ?? Topmost;
             _autonomy.ApplyConfig(_settings?.Config.Autonomy);
+            _sleepConfig = SleepConfig.Normalize(_settings?.Config.Sleep);
+            if (!_sleepConfig.Enabled && _stateMachine.Current == PetState.Sleep)
+            {
+                _stateMachine.Wake();
+            }
+
             var petName = _settings?.Config.PetName ?? "default";
             if (!string.Equals(_runtime.LoadedPetName, petName, StringComparison.OrdinalIgnoreCase))
             {
@@ -104,6 +114,7 @@ public partial class MainWindow : Window
             _runtime.LoadPet(petName);
             _stateMachine.Reset();
             _autonomy.Reset();
+            NoteUserInteraction();
             FitWindowToSkeleton();
             PlaceAtBottomRight();
             ClampToWorkingArea();
@@ -132,6 +143,12 @@ public partial class MainWindow : Window
                 break;
             case PetState.Walk:
                 _runtime.PlayWalk(_preferRunWalk);
+                break;
+            case PetState.Sleep:
+                CancelWalkMovement();
+                _autonomy.Interrupt();
+                _autonomyAction = false;
+                _runtime.PlaySleep();
                 break;
             case PetState.Clicked:
                 CancelWalkMovement();
@@ -175,7 +192,10 @@ public partial class MainWindow : Window
     {
         RunOnUi(() =>
         {
-            if (!_autonomy.IsExpectingAct || _dragStarted || _mouseCaptured)
+            if (!_autonomy.IsExpectingAct ||
+                _dragStarted ||
+                _mouseCaptured ||
+                _stateMachine.Current == PetState.Sleep)
             {
                 if (_autonomy.IsExpectingAct)
                 {
@@ -208,7 +228,11 @@ public partial class MainWindow : Window
 
     private void BeginAutonomyWalk()
     {
-        if (!_autonomy.IsExpectingWalk || _dragStarted || _mouseCaptured || !_runtime.IsLoaded)
+        if (!_autonomy.IsExpectingWalk ||
+            _dragStarted ||
+            _mouseCaptured ||
+            !_runtime.IsLoaded ||
+            _stateMachine.Current == PetState.Sleep)
         {
             if (_autonomy.IsExpectingWalk)
             {
@@ -293,7 +317,7 @@ public partial class MainWindow : Window
         _hasWalkTarget = false;
     }
 
-    private void InterruptAutonomyForUser()
+    private void InterruptAutonomyForUser(bool wakeIfSleeping = false)
     {
         CancelWalkMovement();
         if (_stateMachine.Current == PetState.Walk)
@@ -301,8 +325,40 @@ public partial class MainWindow : Window
             _stateMachine.EndWalk();
         }
 
+        if (wakeIfSleeping && _stateMachine.Current == PetState.Sleep)
+        {
+            _stateMachine.Wake();
+        }
+
         _autonomy.Interrupt();
         _autonomyAction = false;
+    }
+
+    private void NoteUserInteraction()
+    {
+        _secondsSinceUserInteraction = 0;
+    }
+
+    private void UpdateSleep(float delta)
+    {
+        if (!_sleepConfig.Enabled || _stateMachine.Current == PetState.Sleep)
+        {
+            return;
+        }
+
+        _secondsSinceUserInteraction += delta;
+        if (_secondsSinceUserInteraction < _sleepConfig.IdleSeconds)
+        {
+            return;
+        }
+
+        if (_stateMachine.Current is not (PetState.Idle or PetState.Walk))
+        {
+            return;
+        }
+
+        CancelWalkMovement();
+        _stateMachine.TryStartSleep();
     }
 
     private Rect GetWalkArea()
@@ -386,9 +442,14 @@ public partial class MainWindow : Window
         }
 
         // 置顶窗每帧改位置会卡住托盘菜单 / 设置窗，打开期间暂停位移
+        var uiOverlayOpen = SettingsWindow.IsOpen || TrayIconService.IsMenuOpen;
         if (_dragStarted)
         {
             // user drag owns movement
+        }
+        else if (_stateMachine.Current == PetState.Sleep)
+        {
+            // sleeping: no autonomy
         }
         else if (SettingsWindow.IsOpen)
         {
@@ -405,6 +466,11 @@ public partial class MainWindow : Window
         {
             _autonomy.Tick(delta);
             UpdateWalkMovement(delta);
+        }
+
+        if (!uiOverlayOpen && !_dragStarted)
+        {
+            UpdateSleep(delta);
         }
 
         _runtime.Update(delta);
@@ -514,7 +580,8 @@ public partial class MainWindow : Window
         if (!_dragStarted && (Math.Abs(dx) > DragThreshold || Math.Abs(dy) > DragThreshold))
         {
             _dragStarted = true;
-            InterruptAutonomyForUser();
+            NoteUserInteraction();
+            InterruptAutonomyForUser(wakeIfSleeping: true);
         }
 
         if (!_dragStarted)
@@ -545,6 +612,7 @@ public partial class MainWindow : Window
         }
         else
         {
+            NoteUserInteraction();
             InterruptAutonomyForUser();
             _stateMachine.TryClick();
         }

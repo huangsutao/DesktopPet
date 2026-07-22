@@ -16,4 +16,6 @@ public sealed class PetConfig
     public WalkAreaConfig WalkArea { get; set; } = new();
 
     public AutonomyConfig Autonomy { get; set; } = new();
+
+    public SleepConfig Sleep { get; set; } = new();
 }

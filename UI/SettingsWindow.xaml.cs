@@ -65,6 +65,11 @@ public partial class SettingsWindow : Window
         FillRange(PauseBeforeWalkMinBox, PauseBeforeWalkMaxBox, autonomy.PauseBeforeWalk);
         FillRange(PauseAfterWalkMinBox, PauseAfterWalkMaxBox, autonomy.PauseAfterWalk);
         FillRange(PauseAfterActMinBox, PauseAfterActMaxBox, autonomy.PauseAfterAct);
+
+        var sleep = SleepConfig.Normalize(cfg.Sleep);
+        SleepEnabledCheck.IsChecked = sleep.Enabled;
+        SleepIdleSecondsBox.Text = FormatSeconds(sleep.IdleSeconds);
+        UpdateSleepIdleVisibility();
     }
 
     private void SelectWalkMode(WalkAreaMode mode)
@@ -108,6 +113,20 @@ public partial class SettingsWindow : Window
             tag is "Inset" ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void SleepEnabledCheck_OnChanged(object sender, RoutedEventArgs e) =>
+        UpdateSleepIdleVisibility();
+
+    private void UpdateSleepIdleVisibility()
+    {
+        if (SleepIdlePanel is null)
+        {
+            return;
+        }
+
+        SleepIdlePanel.Visibility =
+            SleepEnabledCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         var cfg = _settings.Config;
@@ -140,6 +159,15 @@ public partial class SettingsWindow : Window
                 PauseAfterActMinBox,
                 PauseAfterActMaxBox,
                 cfg.Autonomy?.PauseAfterAct ?? defaults.PauseAfterAct),
+        });
+
+        var sleepDefaults = SleepConfig.CreateDefault();
+        cfg.Sleep = SleepConfig.Normalize(new SleepConfig
+        {
+            Enabled = SleepEnabledCheck.IsChecked == true,
+            IdleSeconds = ParseNonNegative(
+                SleepIdleSecondsBox.Text,
+                cfg.Sleep?.IdleSeconds ?? sleepDefaults.IdleSeconds),
         });
 
         _settings.Save();

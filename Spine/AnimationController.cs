@@ -101,6 +101,20 @@ public sealed class AnimationController
         Play(state, name, loop: true);
     }
 
+    public void PlaySleep(AnimationState state, SkeletonData data, string? petFolderName = null)
+    {
+        var name = PetAnimationMap.Resolve(data, PetAction.Sleep, petFolderName);
+        if (name is null)
+        {
+            PlayIdle(state, data, petFolderName);
+            return;
+        }
+
+        // death 类动画播完停在末帧；其余循环作为睡姿
+        var loop = !name.Contains("death", StringComparison.OrdinalIgnoreCase);
+        Play(state, name, loop);
+    }
+
     public void Play(AnimationState state, string animationName, bool loop = true)
     {
         if (state.Data.SkeletonData.FindAnimation(animationName) is null)

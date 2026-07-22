@@ -94,6 +94,16 @@ public sealed class SpineRuntimeHost : IDisposable
         _animationController.PlayWalk(AnimationState, SkeletonData, LoadedPetName, preferRun);
     }
 
+    public void PlaySleep()
+    {
+        if (AnimationState is null || SkeletonData is null)
+        {
+            return;
+        }
+
+        _animationController.PlaySleep(AnimationState, SkeletonData, LoadedPetName);
+    }
+
     public void PlayRandomAction()
     {
         if (AnimationState is null || SkeletonData is null)

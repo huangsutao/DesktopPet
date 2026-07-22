@@ -97,6 +97,17 @@
                     <TextBox x:Name="PauseAfterActMaxBox" Grid.Row="3" Grid.Column="3" />
                 </Grid>
 
+                <TextBlock Text="睡眠" FontWeight="SemiBold" Margin="0,12,0,4" />
+                <CheckBox x:Name="SleepEnabledCheck"
+                          Content="启用睡眠（长时间无点击/拖动后）"
+                          Margin="0,0,0,8"
+                          Checked="SleepEnabledCheck_OnChanged"
+                          Unchecked="SleepEnabledCheck_OnChanged" />
+                <DockPanel x:Name="SleepIdlePanel" Margin="0,0,0,8">
+                    <TextBlock Text="无交互时长（秒）" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <TextBox x:Name="SleepIdleSecondsBox" Width="80" HorizontalAlignment="Left" />
+                </DockPanel>
+
                 <TextBlock Text="形象切换请用托盘菜单「切换形象」。"
                            Foreground="Gray"
                            TextWrapping="Wrap"

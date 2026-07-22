@@ -50,6 +50,25 @@ public sealed class PetStateMachine
         return true;
     }
 
+    public bool TryStartSleep()
+    {
+        if (Current is not (PetState.Idle or PetState.Walk))
+        {
+            return false;
+        }
+
+        TransitionTo(PetState.Sleep);
+        return true;
+    }
+
+    public void Wake()
+    {
+        if (Current == PetState.Sleep)
+        {
+            TransitionTo(PetState.Idle);
+        }
+    }
+
     public bool TryStartDrag()
     {
         if (Current == PetState.Dragging)

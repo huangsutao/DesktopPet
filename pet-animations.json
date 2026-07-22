@@ -8,30 +8,35 @@
       "morningstar pose", "idle-turn", "run-to-idle"
     ],
     "drag": [ "fall", "jump", "hit", "idle", "run" ],
-    "walk": [ "walk", "run", "sneak" ]
+    "walk": [ "walk", "run", "sneak" ],
+    "sleep": [ "sleep", "Sleep", "death", "crouch", "idle" ]
   },
   "pets": [
     {
       "match": "alien",
       "idle": [ "run" ],
       "click": [ "hit", "jump", "run", "death" ],
-      "walk": [ "run" ]
+      "walk": [ "run" ],
+      "sleep": [ "death" ]
     },
     {
       "match": "hero",
       "click": [ "attack", "jump", "crouch", "walk", "run", "morningstar pose" ],
       "drag": [ "fall", "jump" ],
-      "walk": [ "walk", "run" ]
+      "walk": [ "walk", "run" ],
+      "sleep": [ "crouch", "idle" ]
     },
     {
       "match": "spineboy",
       "click": [ "jump", "shoot", "portal", "aim", "hoverboard", "walk", "run" ],
-      "walk": [ "walk", "run" ]
+      "walk": [ "walk", "run" ],
+      "sleep": [ "death", "idle" ]
     },
     {
       "match": "stretchyman",
       "click": [ "sneak", "idle" ],
-      "walk": [ "sneak" ]
+      "walk": [ "sneak" ],
+      "sleep": [ "idle" ]
     }
   ]
 }

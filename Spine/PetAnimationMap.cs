@@ -174,6 +174,7 @@ public static class PetAnimationMap
             ],
             Drag = ["fall", "jump", "hit", "idle", "run"],
             Walk = ["walk", "run", "sneak"],
+            Sleep = ["sleep", "Sleep", "death", "crouch", "idle"],
         },
         Pets =
         [
@@ -183,6 +184,7 @@ public static class PetAnimationMap
                 Idle = ["run"],
                 Click = ["hit", "jump", "run", "death"],
                 Walk = ["run"],
+                Sleep = ["death"],
             },
             new PetAnimationProfile
             {
@@ -190,18 +192,21 @@ public static class PetAnimationMap
                 Click = ["attack", "jump", "crouch", "walk", "run", "morningstar pose"],
                 Drag = ["fall", "jump"],
                 Walk = ["walk", "run"],
+                Sleep = ["crouch", "idle"],
             },
             new PetAnimationProfile
             {
                 Match = "spineboy",
                 Click = ["jump", "shoot", "portal", "aim", "hoverboard", "walk", "run"],
                 Walk = ["walk", "run"],
+                Sleep = ["death", "idle"],
             },
             new PetAnimationProfile
             {
                 Match = "stretchyman",
                 Click = ["sneak", "idle"],
                 Walk = ["sneak"],
+                Sleep = ["idle"],
             },
         ],
     };
@@ -213,4 +218,5 @@ public enum PetAction
     Click,
     Drag,
     Walk,
+    Sleep,
 }

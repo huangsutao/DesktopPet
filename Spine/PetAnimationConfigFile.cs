@@ -20,12 +20,15 @@ public sealed class PetActionCandidates
 
     public List<string> Walk { get; set; } = [];
 
+    public List<string> Sleep { get; set; } = [];
+
     public IReadOnlyList<string> For(PetAction action) => action switch
     {
         PetAction.Idle => Idle,
         PetAction.Click => Click,
         PetAction.Drag => Drag,
         PetAction.Walk => Walk,
+        PetAction.Sleep => Sleep,
         _ => Idle,
     };
 }
@@ -45,12 +48,15 @@ public sealed class PetAnimationProfile
 
     public List<string>? Walk { get; set; }
 
+    public List<string>? Sleep { get; set; }
+
     public IEnumerable<string> For(PetAction action) => action switch
     {
         PetAction.Idle => Idle ?? [],
         PetAction.Click => Click ?? [],
         PetAction.Drag => Drag ?? [],
         PetAction.Walk => Walk ?? [],
+        PetAction.Sleep => Sleep ?? [],
         _ => [],
     };
 }

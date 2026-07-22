@@ -48,6 +48,7 @@ public sealed class SettingsService
                 Config = loaded;
                 Config.WalkArea ??= new WalkAreaConfig();
                 Config.Autonomy = AutonomyConfig.Normalize(Config.Autonomy);
+                Config.Sleep = SleepConfig.Normalize(Config.Sleep);
                 var migrated = false;
                 // v2/v3: 官方示例默认尺寸统一为 0.25
                 if (Config.ConfigVersion < 3)
