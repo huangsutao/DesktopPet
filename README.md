@@ -2,6 +2,16 @@
 
 基于 **WPF + Spine** 的 Windows 桌面宠物。无边框透明置顶窗口，播放 Spine 骨骼动画，支持拖拽、点击互动、自主走动与睡眠。
 
+## 截图
+
+桌面宠物：
+
+![主界面](Screenshots/main.png)
+
+设置界面：
+
+![设置](Screenshots/settings.png)
+
 ## 技术栈
 
 - .NET 9 / WPF
