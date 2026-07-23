@@ -24,7 +24,8 @@
 ## 环境要求
 
 - Windows 10/11
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [Visual Studio 2022](https://visualstudio.microsoft.com/)（建议安装「.NET 桌面开发」工作负载，用于打开/调试本项目）
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)（也可随 VS2022 安装）
 - Spine 导出资源（与 Runtime 主版本匹配，例如 4.3.x）
 
 ## 快速开始
@@ -35,6 +36,8 @@ cd DesktopPet
 dotnet restore
 dotnet run --project DesktopPet.csproj
 ```
+
+也可在 Visual Studio 2022 中打开 `DesktopPet.sln`，还原 NuGet 后按 F5 运行。
 
 托盘菜单可切换形象、开关点击穿透、打开设置。用户设置保存在 `%AppData%/DesktopPet/settings.json`。
 
