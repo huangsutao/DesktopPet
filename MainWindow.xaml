@@ -20,7 +20,7 @@
         <Image x:Name="PetImage"
                Stretch="Fill"
                Cursor="Hand"
-               ToolTip="DesktopPet（点击互动 / 拖拽移动）" />
+               ToolTip="{DynamicResource Main.ToolTip}" />
 
         <ui:SpeechBubbleView x:Name="SpeechBubble"
                              VerticalAlignment="Top"

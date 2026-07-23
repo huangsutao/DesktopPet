@@ -8,7 +8,7 @@ namespace DesktopPet.Services;
 
 /// <summary>
 /// Builds the user message for bubble AI calls: local time/date + location + optional weather.
-/// Weather uses Open-Meteo (no API key). Hot topics are left to the model with prompt guidance.
+/// Copy comes from <see cref="LocalizationService"/> (Locales/*.json).
 /// </summary>
 public static class AiPromptContextBuilder
 {
@@ -23,63 +23,90 @@ public static class AiPromptContextBuilder
     private static DateTime _weatherCacheUtc = DateTime.MinValue;
     private static readonly TimeSpan WeatherCacheTtl = TimeSpan.FromMinutes(30);
 
-    private static readonly string[] WeekdaysZh =
-    [
-        "星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六",
-    ];
-
     public static async Task<string> BuildBubbleUserPromptAsync(
         AiConfig config,
         CancellationToken cancellationToken = default)
     {
         config = AiConfig.Normalize(config);
+        var L = LocalizationService.Instance;
         var now = DateTime.Now;
         var sb = new StringBuilder();
 
-        sb.AppendLine("【当前情境】");
-        sb.AppendLine(CultureInfo.InvariantCulture,
-            $"本地时间：{now:yyyy年M月d日} {WeekdaysZh[(int)now.DayOfWeek]} {now:HH:mm}（{DescribeDayPart(now)}）");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"所在国家/地区：{config.Country}");
+        var weekday = L.Get($"Ai.Weekday.{(int)now.DayOfWeek}", now.DayOfWeek.ToString());
+        var dayPart = DescribeDayPart(now);
+        var dateFmt = L.Get("Ai.Context.DateFormat", "yyyy-M-d");
+        string dateText;
+        try
+        {
+            dateText = now.ToString(dateFmt, CultureInfo.InvariantCulture);
+        }
+        catch
+        {
+            dateText = now.ToString("yyyy-M-d", CultureInfo.InvariantCulture);
+        }
+
+        var timeText = now.ToString("HH:mm", CultureInfo.InvariantCulture);
+
+        sb.AppendLine(L.Get("Ai.Context.Header", "[Context]"));
+        sb.AppendLine(Format(
+            L.Get("Ai.Context.LocalTime", "Local time: {0} {1} {2} ({3})"),
+            dateText,
+            weekday,
+            timeText,
+            dayPart));
+        sb.AppendLine(Format(
+            L.Get("Ai.Context.Country", "Country/region: {0}"),
+            config.Country));
 
         if (!string.IsNullOrWhiteSpace(config.City))
         {
-            sb.AppendLine(CultureInfo.InvariantCulture, $"所在城市：{config.City}");
+            sb.AppendLine(Format(
+                L.Get("Ai.Context.City", "City: {0}"),
+                config.City));
             var weather = await TryGetWeatherBriefAsync(config.Country, config.City, cancellationToken)
                 .ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(weather))
             {
-                sb.AppendLine(CultureInfo.InvariantCulture, $"当地天气：{weather}");
+                sb.AppendLine(Format(
+                    L.Get("Ai.Context.Weather", "Weather: {0}"),
+                    weather));
             }
         }
         else
         {
-            sb.AppendLine("所在城市：未设置");
+            sb.AppendLine(L.Get("Ai.Context.CityUnset", "City: (not set)"));
         }
 
         sb.AppendLine();
-        sb.AppendLine(
-            "请结合以上情境（时段、日期、地点、天气），并可自然带一句应季或近期大众话题的轻松感受；" +
-            "不要编造具体新闻标题或数据。说一句很短的话跟我互动，不要超过40个字。");
+        sb.AppendLine(L.Get(
+            "Ai.Context.UserAsk",
+            "Using the context above, say one short friendly line (max ~40 characters). Do not invent news headlines."));
 
         return sb.ToString().TrimEnd();
     }
 
-    private static string DescribeDayPart(DateTime now) => now.Hour switch
+    private static string DescribeDayPart(DateTime now)
     {
-        >= 5 and < 9 => "清晨",
-        >= 9 and < 12 => "上午",
-        >= 12 and < 14 => "中午",
-        >= 14 and < 18 => "下午",
-        >= 18 and < 23 => "晚上",
-        _ => "深夜",
-    };
+        var L = LocalizationService.Instance;
+        var key = now.Hour switch
+        {
+            >= 5 and < 9 => "Ai.DayPart.Dawn",
+            >= 9 and < 12 => "Ai.DayPart.Morning",
+            >= 12 and < 14 => "Ai.DayPart.Noon",
+            >= 14 and < 18 => "Ai.DayPart.Afternoon",
+            >= 18 and < 23 => "Ai.DayPart.Evening",
+            _ => "Ai.DayPart.Night",
+        };
+        return L.Get(key, key);
+    }
 
     private static async Task<string?> TryGetWeatherBriefAsync(
         string country,
         string city,
         CancellationToken cancellationToken)
     {
-        var cacheKey = $"{country}|{city}";
+        var lang = LocalizationService.Instance.CurrentLanguage;
+        var cacheKey = $"{lang}|{country}|{city}";
         lock (WeatherLock)
         {
             if (_weatherCacheKey == cacheKey &&
@@ -143,6 +170,7 @@ public static class AiPromptContextBuilder
                 return null;
             }
 
+            var L = LocalizationService.Instance;
             var temp = current.TryGetProperty("temperature_2m", out var t) ? t.GetDouble() : double.NaN;
             var code = current.TryGetProperty("weather_code", out var c) ? c.GetInt32() : -1;
             var humidity = current.TryGetProperty("relative_humidity_2m", out var h) ? h.GetInt32() : -1;
@@ -150,15 +178,18 @@ public static class AiPromptContextBuilder
             var parts = new List<string> { label, DescribeWmoCode(code) };
             if (!double.IsNaN(temp))
             {
-                parts.Add($"{temp.ToString("0.#", CultureInfo.InvariantCulture)}℃");
+                parts.Add(Format(
+                    L.Get("Weather.Temp", "{0}°C"),
+                    temp.ToString("0.#", CultureInfo.InvariantCulture)));
             }
 
             if (humidity >= 0)
             {
-                parts.Add($"湿度{humidity}%");
+                parts.Add(Format(L.Get("Weather.Humidity", "Humidity {0}%"), humidity));
             }
 
-            var text = string.Join("，", parts);
+            var join = L.Get("Weather.Join", ", ");
+            var text = string.Join(join, parts);
             lock (WeatherLock)
             {
                 _weatherCacheKey = cacheKey;
@@ -208,31 +239,50 @@ public static class AiPromptContextBuilder
             return null;
         }
 
+        var L = LocalizationService.Instance;
         var name = p.TryGetProperty("name", out var nameEl) ? nameEl.GetString() : null;
         var admin = p.TryGetProperty("admin1", out var adminEl) ? adminEl.GetString() : null;
+        var local = L.Get("Weather.LocalArea", "local");
         var label = string.IsNullOrWhiteSpace(admin) ||
                     string.Equals(admin, name, StringComparison.OrdinalIgnoreCase)
-            ? (name ?? "当地")
-            : $"{name}（{admin}）";
+            ? (name ?? local)
+            : Format(L.Get("Weather.PlaceWithAdmin", "{0} ({1})"), name, admin);
 
         return (latEl.GetDouble(), lonEl.GetDouble(), label);
     }
 
-    private static string DescribeWmoCode(int code) => code switch
+    private static string DescribeWmoCode(int code)
     {
-        0 => "晴朗",
-        1 or 2 => "少云",
-        3 => "多云",
-        45 or 48 => "有雾",
-        51 or 53 or 55 => "毛毛雨",
-        56 or 57 => "冻毛毛雨",
-        61 or 63 or 65 => "下雨",
-        66 or 67 => "冻雨",
-        71 or 73 or 75 or 77 => "下雪",
-        80 or 81 or 82 => "阵雨",
-        85 or 86 => "阵雪",
-        95 => "雷阵雨",
-        96 or 99 => "雷暴伴冰雹",
-        _ => "天气一般",
-    };
+        var L = LocalizationService.Instance;
+        var key = code switch
+        {
+            0 => "Weather.Clear",
+            1 or 2 => "Weather.MainlyClear",
+            3 => "Weather.Overcast",
+            45 or 48 => "Weather.Fog",
+            51 or 53 or 55 => "Weather.Drizzle",
+            56 or 57 => "Weather.FreezingDrizzle",
+            61 or 63 or 65 => "Weather.Rain",
+            66 or 67 => "Weather.FreezingRain",
+            71 or 73 or 75 or 77 => "Weather.Snow",
+            80 or 81 or 82 => "Weather.RainShowers",
+            85 or 86 => "Weather.SnowShowers",
+            95 => "Weather.Thunderstorm",
+            96 or 99 => "Weather.ThunderstormHail",
+            _ => "Weather.Other",
+        };
+        return L.Get(key, key);
+    }
+
+    private static string Format(string template, params object?[] args)
+    {
+        try
+        {
+            return string.Format(CultureInfo.InvariantCulture, template, args);
+        }
+        catch (FormatException)
+        {
+            return template;
+        }
+    }
 }

@@ -36,10 +36,16 @@ public static class PetAnimationMap
         ?? (data.Animations.Count > 0 ? data.Animations.Items[0].Name : null);
 
     /// <summary>
-    /// Speech bubble lines from pet-animations.json (pet override → root → built-in).
+    /// Speech bubble lines: Locales/_bubbleLines → pet override → root pet-animations → built-in.
     /// </summary>
     public static IReadOnlyList<string> GetBubbleLines(string? petFolderName = null)
     {
+        var localized = DesktopPet.Services.LocalizationService.Instance.GetBubbleLines();
+        if (localized.Count > 0)
+        {
+            return localized;
+        }
+
         var config = EnsureLoaded();
         foreach (var profile in config.Pets)
         {
@@ -66,9 +72,18 @@ public static class PetAnimationMap
         return BuiltInBubbleLines;
     }
 
-    /// <summary>AI system role prompt from pet-animations.json (or built-in default).</summary>
+    /// <summary>
+    /// AI system role: Locales Ai.RolePrompt → pet-animations.json → built-in.
+    /// </summary>
     public static string GetAiRolePrompt()
     {
+        var fromLocale = DesktopPet.Services.LocalizationService.Instance.Get("Ai.RolePrompt");
+        if (!string.IsNullOrWhiteSpace(fromLocale) &&
+            !string.Equals(fromLocale, "Ai.RolePrompt", StringComparison.Ordinal))
+        {
+            return fromLocale.Trim();
+        }
+
         var prompt = EnsureLoaded().AiRolePrompt?.Trim();
         return string.IsNullOrWhiteSpace(prompt) ? BuiltInAiRolePrompt : prompt;
     }

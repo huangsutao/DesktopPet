@@ -7,8 +7,9 @@ namespace DesktopPet.Services;
 public sealed record LocaleInfo(string Code, string DisplayName, string FilePath);
 
 /// <summary>
-/// Loads UI strings from Locales/*.json. Add a new language by dropping another JSON file
-/// (same keys as zh-CN.json); no code change required.
+/// Loads UI / bubble / AI strings from Locales/*.json.
+/// Add a language by dropping another JSON (same keys as zh-CN.json); no code change required.
+/// Optional <c>_bubbleLines</c> array provides localized speech-bubble fallback lines.
 /// </summary>
 public sealed class LocalizationService
 {
@@ -16,6 +17,7 @@ public sealed class LocalizationService
     public const string FallbackLanguage = "en";
 
     private readonly Dictionary<string, string> _strings = new(StringComparer.Ordinal);
+    private IReadOnlyList<string> _bubbleLines = [];
     private ResourceDictionary? _appDict;
 
     public static LocalizationService Instance { get; } = new();
@@ -89,12 +91,13 @@ public sealed class LocalizationService
             ?.FilePath;
 
         _strings.Clear();
+        _bubbleLines = [];
         if (path is not null && File.Exists(path))
         {
-            LoadInto(_strings, path);
+            LoadInto(_strings, path, out var bubbles);
+            _bubbleLines = bubbles;
         }
 
-        // Fill missing keys from fallback English, then Chinese.
         EnsureFallback(FallbackLanguage);
         if (!string.Equals(code, DefaultLanguage, StringComparison.OrdinalIgnoreCase))
         {
@@ -115,6 +118,9 @@ public sealed class LocalizationService
 
         return fallback ?? key;
     }
+
+    /// <summary>Localized bubble lines from <c>_bubbleLines</c> in the active locale (may be empty).</summary>
+    public IReadOnlyList<string> GetBubbleLines() => _bubbleLines;
 
     private string ResolveLanguageCode(string? preferred)
     {
@@ -150,7 +156,7 @@ public sealed class LocalizationService
         }
 
         var fallback = new Dictionary<string, string>(StringComparer.Ordinal);
-        LoadInto(fallback, path);
+        LoadInto(fallback, path, out var bubbles);
         foreach (var (key, value) in fallback)
         {
             if (!_strings.ContainsKey(key))
@@ -158,10 +164,19 @@ public sealed class LocalizationService
                 _strings[key] = value;
             }
         }
+
+        if (_bubbleLines.Count == 0 && bubbles.Count > 0)
+        {
+            _bubbleLines = bubbles;
+        }
     }
 
-    private static void LoadInto(Dictionary<string, string> target, string path)
+    private static void LoadInto(
+        Dictionary<string, string> target,
+        string path,
+        out IReadOnlyList<string> bubbleLines)
     {
+        bubbleLines = [];
         try
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions
@@ -172,6 +187,17 @@ public sealed class LocalizationService
 
             foreach (var prop in doc.RootElement.EnumerateObject())
             {
+                if (prop.Name.Equals("_bubbleLines", StringComparison.OrdinalIgnoreCase) &&
+                    prop.Value.ValueKind == JsonValueKind.Array)
+                {
+                    bubbleLines = prop.Value.EnumerateArray()
+                        .Select(e => e.GetString()?.Trim())
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .Cast<string>()
+                        .ToList();
+                    continue;
+                }
+
                 if (prop.Name.StartsWith('_'))
                 {
                     continue;

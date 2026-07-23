@@ -66,14 +66,26 @@ public partial class MainWindow : Window
         if (_settings is not null)
         {
             _settings.Changed -= OnSettingsChanged;
+            LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
         }
 
         _settings = settings;
         _settings.Changed += OnSettingsChanged;
+        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
         _autonomy.ApplyConfig(_settings.Config.Autonomy);
         _sleepConfig = SleepConfig.Normalize(_settings.Config.Sleep);
         ApplyBubbleSettings();
         NoteUserInteraction();
+    }
+
+    private void OnLanguageChanged()
+    {
+        RunOnUi(() =>
+        {
+            var petName = _settings?.Config.PetName ?? _runtime.LoadedPetName ?? "default";
+            _bubbles.SetLines(PetAnimationMap.GetBubbleLines(petName));
+            ApplyBubbleSettings();
+        });
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -837,6 +849,8 @@ public partial class MainWindow : Window
         {
             _settings.Changed -= OnSettingsChanged;
         }
+
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
 
         _renderer.Dispose();
         _runtime.Dispose();
