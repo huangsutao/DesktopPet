@@ -671,11 +671,17 @@ public partial class MainWindow : Window
         var ai = AiConfig.Normalize(_settings?.Config.Ai);
         _bubbles.Enabled = bubble.Enabled;
         _bubbles.TryGetAiLineAsync = bubble.Enabled && ai.IsReady
-            ? ct => AiChatService.CompleteAsync(
-                ai,
-                PetAnimationMap.GetAiRolePrompt(),
-                "请说一句很短的话跟我互动，不要超过40个字。",
-                ct)
+            ? async ct =>
+            {
+                var userPrompt = await AiPromptContextBuilder.BuildBubbleUserPromptAsync(ai, ct)
+                    .ConfigureAwait(false);
+                return await AiChatService.CompleteAsync(
+                        ai,
+                        PetAnimationMap.GetAiRolePrompt(),
+                        userPrompt,
+                        ct)
+                    .ConfigureAwait(false);
+            }
             : null;
 
         if (!bubble.Enabled)

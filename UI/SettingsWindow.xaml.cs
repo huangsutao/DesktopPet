@@ -80,6 +80,8 @@ public partial class SettingsWindow : Window
         AiUrlBox.Text = ai.Url;
         AiApiKeyBox.Password = ai.ApiKey;
         AiModelIdBox.Text = ai.ModelId;
+        AiCountryBox.Text = ai.Country;
+        AiCityBox.Text = ai.City;
         UpdateAiParamsVisibility();
     }
 
@@ -207,6 +209,8 @@ public partial class SettingsWindow : Window
             Url = AiUrlBox.Text,
             ApiKey = AiApiKeyBox.Password,
             ModelId = AiModelIdBox.Text,
+            Country = AiCountryBox.Text,
+            City = AiCityBox.Text,
         });
 
         _settings.Save();

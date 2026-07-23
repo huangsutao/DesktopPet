@@ -192,7 +192,27 @@
                             <PasswordBox x:Name="AiApiKeyBox" Margin="0,0,0,12" />
 
                             <TextBlock Text="模型 ID" FontWeight="SemiBold" Margin="0,0,0,4" />
-                            <TextBox x:Name="AiModelIdBox" Margin="0,0,0,4" />
+                            <TextBox x:Name="AiModelIdBox" Margin="0,0,0,12" />
+
+                            <TextBlock Text="地理位置（给 AI 的情境）" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="国家/地区" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox x:Name="AiCountryBox" Grid.Column="1" Margin="0,0,12,0" />
+                                <TextBlock Grid.Column="2" Text="城市" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox x:Name="AiCityBox" Grid.Column="3" />
+                            </Grid>
+                            <TextBlock Text="填写城市后会尝试查询当地天气并传给 AI；热点话题由模型结合日期自行把握，请勿指望实时新闻接口。"
+                                       Foreground="Gray"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12" />
+
                             <TextBlock Text="角色提示词写在程序目录 pet-animations.json 的 aiRolePrompt 字段，修改后需重启程序才生效。"
                                        Foreground="Gray"
                                        FontSize="11"

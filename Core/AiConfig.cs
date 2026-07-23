@@ -1,6 +1,6 @@
 namespace DesktopPet.Core;
 
-/// <summary>OpenAI-compatible chat API settings for speech bubbles.</summary>
+/// <summary>OpenAI-compatible chat API settings.</summary>
 public sealed class AiConfig
 {
     public bool Enabled { get; set; }
@@ -11,6 +11,12 @@ public sealed class AiConfig
     public string ApiKey { get; set; } = string.Empty;
 
     public string ModelId { get; set; } = string.Empty;
+
+    /// <summary>Country / region used as AI situational context (e.g. 中国).</summary>
+    public string Country { get; set; } = "中国";
+
+    /// <summary>City used for AI context and optional weather lookup (e.g. 上海).</summary>
+    public string City { get; set; } = string.Empty;
 
     public static AiConfig CreateDefault() => new();
 
@@ -24,6 +30,13 @@ public sealed class AiConfig
         source.Url = (source.Url ?? string.Empty).Trim();
         source.ApiKey = (source.ApiKey ?? string.Empty).Trim();
         source.ModelId = (source.ModelId ?? string.Empty).Trim();
+        source.Country = (source.Country ?? string.Empty).Trim();
+        source.City = (source.City ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(source.Country))
+        {
+            source.Country = "中国";
+        }
+
         return source;
     }
 

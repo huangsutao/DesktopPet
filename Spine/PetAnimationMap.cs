@@ -84,7 +84,8 @@ public static class PetAnimationMap
     ];
 
     private const string BuiltInAiRolePrompt =
-        "你是一只可爱的桌面宠物，说话简短、温柔、俏皮，每次只说一两句中文，不超过40个字，不要用引号包裹。";
+        "你是一只可爱的桌面宠物，陪在用户桌面旁。说话简短、温柔、俏皮，每次只说一两句中文，不超过40个字，不要用引号包裹，不要解释自己是AI。" +
+        "用户消息会提供当前时间、日期、地点与天气等情境，请据此自然回应；可轻提应季感受，不要编造具体新闻。";
 
     /// <summary>
     /// All animations that can be used for the logical action (order preserved, duplicates removed).
