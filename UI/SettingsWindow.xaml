@@ -169,7 +169,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,12,12,4">
                     <StackPanel>
                         <CheckBox x:Name="AiEnabledCheck"
-                                  Content="启用 AI 文案"
+                                  Content="启用 AI"
                                   Margin="0,0,0,8"
                                   Checked="AiEnabledCheck_OnChanged"
                                   Unchecked="AiEnabledCheck_OnChanged" />
