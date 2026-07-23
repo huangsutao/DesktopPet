@@ -9,6 +9,19 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+
+    <!-- 程序集 / 文件属性（资源管理器 → 右键 exe → 详细信息） -->
+    <AssemblyTitle>DesktopPet</AssemblyTitle>
+    <Product>DesktopPet</Product>
+    <AssemblyName>DesktopPet</AssemblyName>
+    <Description>WPF + Spine Windows desktop pet</Description>
+    <Company>Sutao</Company>
+    <Authors>Sutao</Authors>
+    <Copyright>Copyright © 2026 Sutao</Copyright>
+    <Version>0.1.4</Version>
+    <FileVersion>0.1.4</FileVersion>
+    <InformationalVersion>0.1.4</InformationalVersion>
+    <NeutralLanguage>zh-CN</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
