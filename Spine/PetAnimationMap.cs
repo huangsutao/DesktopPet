@@ -66,6 +66,13 @@ public static class PetAnimationMap
         return BuiltInBubbleLines;
     }
 
+    /// <summary>AI system role prompt from pet-animations.json (or built-in default).</summary>
+    public static string GetAiRolePrompt()
+    {
+        var prompt = EnsureLoaded().AiRolePrompt?.Trim();
+        return string.IsNullOrWhiteSpace(prompt) ? BuiltInAiRolePrompt : prompt;
+    }
+
     private static IReadOnlyList<string> SanitizeLines(IEnumerable<string> lines) =>
         lines.Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim()).ToList();
 
@@ -75,6 +82,9 @@ public static class PetAnimationMap
         "摸鱼一时爽，一直摸鱼一直爽。",
         "我在这儿陪着你呢。",
     ];
+
+    private const string BuiltInAiRolePrompt =
+        "你是一只可爱的桌面宠物，说话简短、温柔、俏皮，每次只说一两句中文，不超过40个字，不要用引号包裹。";
 
     /// <summary>
     /// All animations that can be used for the logical action (order preserved, duplicates removed).
@@ -205,6 +215,7 @@ public static class PetAnimationMap
     {
         IncludeAllNonIdleOnClick = true,
         BubbleLines = BuiltInBubbleLines.ToList(),
+        AiRolePrompt = BuiltInAiRolePrompt,
         Defaults = new PetActionCandidates
         {
             Idle = ["idle", "Idle", "stand", "breath"],

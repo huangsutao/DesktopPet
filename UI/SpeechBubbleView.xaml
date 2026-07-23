@@ -12,7 +12,7 @@
 
         <!-- 气泡本体（不用 DropShadow：透明窗上易闪烁） -->
         <Border Grid.Row="0"
-                MaxWidth="200"
+                MaxWidth="260"
                 CornerRadius="14"
                 Padding="12,9"
                 BorderThickness="1.25"

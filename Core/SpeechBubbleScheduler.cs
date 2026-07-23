@@ -4,21 +4,32 @@ namespace DesktopPet.Core;
 
 /// <summary>
 /// Periodically shows short random lines above the pet.
-/// Lines are loaded from pet-animations.json.
+/// Lines are loaded from pet-animations.json; optional AI provider is preferred when set.
 /// </summary>
 public sealed class SpeechBubbleScheduler
 {
     private static readonly (double Min, double Max) GapSeconds = (18, 36);
     private static readonly (double Min, double Max) ShowSeconds = (4.0, 6.5);
+    private static readonly TimeSpan AiTimeout = TimeSpan.FromSeconds(8);
 
     private readonly Random _rng = new();
     private IReadOnlyList<string> _lines = PetAnimationMap.GetBubbleLines();
     private double _timer;
     private bool _showing;
+    private bool _fetching;
+    private int _generation;
     private int _lastIndex = -1;
 
     public event Action<string>? RequestShow;
     public event Action? RequestHide;
+
+    /// <summary>When false, ticks are no-ops and any visible bubble is interrupted.</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Optional AI line provider. Return null/empty to fall back to local config lines.
+    /// </summary>
+    public Func<CancellationToken, Task<string?>>? TryGetAiLineAsync { get; set; }
 
     public bool IsShowing => _showing;
 
@@ -33,6 +44,8 @@ public sealed class SpeechBubbleScheduler
 
     public void Reset()
     {
+        _generation++;
+        _fetching = false;
         _showing = false;
         _timer = 5 + _rng.NextDouble() * 5;
     }
@@ -43,6 +56,8 @@ public sealed class SpeechBubbleScheduler
     /// </summary>
     public void Interrupt()
     {
+        _generation++;
+        _fetching = false;
         if (!_showing)
         {
             return;
@@ -55,7 +70,22 @@ public sealed class SpeechBubbleScheduler
 
     public void Tick(double deltaSeconds)
     {
-        if (_lines.Count == 0)
+        if (!Enabled)
+        {
+            if (_showing || _fetching)
+            {
+                Interrupt();
+            }
+
+            return;
+        }
+
+        if (_fetching)
+        {
+            return;
+        }
+
+        if (_lines.Count == 0 && TryGetAiLineAsync is null)
         {
             return;
         }
@@ -74,13 +104,66 @@ public sealed class SpeechBubbleScheduler
             return;
         }
 
-        _showing = true;
-        RequestShow?.Invoke(PickLine());
-        ScheduleShow();
+        _fetching = true;
+        var gen = ++_generation;
+        _ = BeginShowAsync(gen);
+    }
+
+    private async Task BeginShowAsync(int generation)
+    {
+        var fallback = PickLine();
+        var message = fallback;
+
+        try
+        {
+            if (TryGetAiLineAsync is not null)
+            {
+                try
+                {
+                    using var cts = new CancellationTokenSource(AiTimeout);
+                    var ai = await TryGetAiLineAsync(cts.Token).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(ai))
+                    {
+                        message = ai.Trim();
+                    }
+                }
+                catch
+                {
+                    // Keep local fallback on any AI failure/timeout.
+                }
+            }
+
+            if (generation != _generation)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                ScheduleGap();
+                return;
+            }
+
+            _showing = true;
+            RequestShow?.Invoke(message);
+            ScheduleShow();
+        }
+        finally
+        {
+            if (generation == _generation)
+            {
+                _fetching = false;
+            }
+        }
     }
 
     private string PickLine()
     {
+        if (_lines.Count == 0)
+        {
+            return string.Empty;
+        }
+
         if (_lines.Count == 1)
         {
             return _lines[0];

@@ -1,5 +1,6 @@
 {
   "includeAllNonIdleOnClick": true,
+  "aiRolePrompt": "你是一只可爱的桌面宠物，说话简短、温柔、俏皮，每次只说一两句中文，不超过40个字，不要用引号包裹，不要解释自己是AI。",
   "bubbleLines": [
     "今天也要加油呀～",
     "摸鱼一时爽，一直摸鱼一直爽。",

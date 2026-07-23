@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="设置"
-        Width="460"
-        Height="420"
+        Width="500"
+        Height="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         ShowInTaskbar="True">
@@ -145,6 +145,59 @@
                             <TextBlock Text="无交互时长（秒）" VerticalAlignment="Center" Margin="0,0,12,0" />
                             <TextBox x:Name="SleepIdleSecondsBox" Width="80" HorizontalAlignment="Left" />
                         </DockPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 气泡 -->
+            <TabItem Header="气泡">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,12,12,4">
+                    <StackPanel>
+                        <CheckBox x:Name="BubbleEnabledCheck"
+                                  Content="启用气泡对话"
+                                  Margin="0,0,0,8" />
+                        <TextBlock Text="关闭后不再调度气泡，也不显示头顶对话。"
+                                   Foreground="Gray"
+                                   FontSize="11"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- AI -->
+            <TabItem Header="AI">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,12,12,4">
+                    <StackPanel>
+                        <CheckBox x:Name="AiEnabledCheck"
+                                  Content="启用 AI 文案"
+                                  Margin="0,0,0,8"
+                                  Checked="AiEnabledCheck_OnChanged"
+                                  Unchecked="AiEnabledCheck_OnChanged" />
+                        <TextBlock Text="启用后气泡优先展示 AI 接口内容；调用失败时回退本地文案。需同时开启「气泡对话」。"
+                                   Foreground="Gray"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12" />
+
+                        <StackPanel x:Name="AiParamsPanel">
+                            <TextBlock Text="接口地址 (URL)" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <TextBox x:Name="AiUrlBox" Margin="0,0,0,4" />
+                            <TextBlock Text="支持完整 .../chat/completions，或兼容模式基址如 https://api.openai.com/v1"
+                                       Foreground="Gray"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12" />
+
+                            <TextBlock Text="API Key" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <PasswordBox x:Name="AiApiKeyBox" Margin="0,0,0,12" />
+
+                            <TextBlock Text="模型 ID" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <TextBox x:Name="AiModelIdBox" Margin="0,0,0,4" />
+                            <TextBlock Text="角色提示词写在程序目录 pet-animations.json 的 aiRolePrompt 字段。"
+                                       Foreground="Gray"
+                                       FontSize="11"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

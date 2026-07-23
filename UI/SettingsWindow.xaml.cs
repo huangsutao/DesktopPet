@@ -71,6 +71,16 @@ public partial class SettingsWindow : Window
         SleepEnabledCheck.IsChecked = sleep.Enabled;
         SleepIdleSecondsBox.Text = FormatSeconds(sleep.IdleSeconds);
         UpdateSleepIdleVisibility();
+
+        var bubble = BubbleConfig.Normalize(cfg.Bubble);
+        BubbleEnabledCheck.IsChecked = bubble.Enabled;
+
+        var ai = AiConfig.Normalize(cfg.Ai);
+        AiEnabledCheck.IsChecked = ai.Enabled;
+        AiUrlBox.Text = ai.Url;
+        AiApiKeyBox.Password = ai.ApiKey;
+        AiModelIdBox.Text = ai.ModelId;
+        UpdateAiParamsVisibility();
     }
 
     private void SelectWalkMode(WalkAreaMode mode)
@@ -128,6 +138,20 @@ public partial class SettingsWindow : Window
             SleepEnabledCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void AiEnabledCheck_OnChanged(object sender, RoutedEventArgs e) =>
+        UpdateAiParamsVisibility();
+
+    private void UpdateAiParamsVisibility()
+    {
+        if (AiParamsPanel is null)
+        {
+            return;
+        }
+
+        AiParamsPanel.Visibility =
+            AiEnabledCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         var cfg = _settings.Config;
@@ -170,6 +194,19 @@ public partial class SettingsWindow : Window
             IdleSeconds = ParseNonNegative(
                 SleepIdleSecondsBox.Text,
                 cfg.Sleep?.IdleSeconds ?? sleepDefaults.IdleSeconds),
+        });
+
+        cfg.Bubble = BubbleConfig.Normalize(new BubbleConfig
+        {
+            Enabled = BubbleEnabledCheck.IsChecked == true,
+        });
+
+        cfg.Ai = AiConfig.Normalize(new AiConfig
+        {
+            Enabled = AiEnabledCheck.IsChecked == true,
+            Url = AiUrlBox.Text,
+            ApiKey = AiApiKeyBox.Password,
+            ModelId = AiModelIdBox.Text,
         });
 
         _settings.Save();

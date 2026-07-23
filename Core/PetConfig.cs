@@ -18,4 +18,8 @@ public sealed class PetConfig
     public AutonomyConfig Autonomy { get; set; } = new();
 
     public SleepConfig Sleep { get; set; } = new();
+
+    public BubbleConfig Bubble { get; set; } = new();
+
+    public AiConfig Ai { get; set; } = new();
 }

@@ -72,6 +72,7 @@ public partial class MainWindow : Window
         _settings.Changed += OnSettingsChanged;
         _autonomy.ApplyConfig(_settings.Config.Autonomy);
         _sleepConfig = SleepConfig.Normalize(_settings.Config.Sleep);
+        ApplyBubbleSettings();
         NoteUserInteraction();
     }
 
@@ -94,6 +95,7 @@ public partial class MainWindow : Window
             ApplyClickThrough();
             _autonomy.ApplyConfig(_settings?.Config.Autonomy);
             _sleepConfig = SleepConfig.Normalize(_settings?.Config.Sleep);
+            ApplyBubbleSettings();
             if (!_sleepConfig.Enabled && _stateMachine.Current == PetState.Sleep)
             {
                 _stateMachine.Wake();
@@ -531,7 +533,8 @@ public partial class MainWindow : Window
         if (!uiOverlayOpen &&
             !_dragStarted &&
             !_hasWalkTarget &&
-            _stateMachine.Current is PetState.Idle)
+            _stateMachine.Current is PetState.Idle &&
+            (_settings?.Config.Bubble.Enabled ?? true))
         {
             _bubbles.Tick(delta);
         }
@@ -660,6 +663,26 @@ public partial class MainWindow : Window
     private void HideSpeechBubbleImmediate()
     {
         SpeechBubble.HideImmediate();
+    }
+
+    private void ApplyBubbleSettings()
+    {
+        var bubble = BubbleConfig.Normalize(_settings?.Config.Bubble);
+        var ai = AiConfig.Normalize(_settings?.Config.Ai);
+        _bubbles.Enabled = bubble.Enabled;
+        _bubbles.TryGetAiLineAsync = bubble.Enabled && ai.IsReady
+            ? ct => AiChatService.CompleteAsync(
+                ai,
+                PetAnimationMap.GetAiRolePrompt(),
+                "请说一句很短的话跟我互动，不要超过40个字。",
+                ct)
+            : null;
+
+        if (!bubble.Enabled)
+        {
+            _bubbles.Interrupt();
+            HideSpeechBubbleImmediate();
+        }
     }
 
     private bool ResizeKeepingBottomCenter(double newW, double newH)
