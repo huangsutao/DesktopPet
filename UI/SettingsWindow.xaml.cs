@@ -87,6 +87,12 @@ public partial class SettingsWindow : Window
 
     private void SelectWalkMode(WalkAreaMode mode)
     {
+        // CustomRect 未提供设置 UI，旧配置回退为 Inset。
+        if (mode == WalkAreaMode.CustomRect)
+        {
+            mode = WalkAreaMode.Inset;
+        }
+
         foreach (ComboBoxItem item in WalkModeCombo.Items)
         {
             if (string.Equals(item.Tag as string, mode.ToString(), StringComparison.OrdinalIgnoreCase))

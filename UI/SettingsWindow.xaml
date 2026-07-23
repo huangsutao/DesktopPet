@@ -62,7 +62,6 @@
                                   SelectionChanged="WalkModeCombo_OnSelectionChanged">
                             <ComboBoxItem Content="整个工作区（除去任务栏）" Tag="WorkArea" />
                             <ComboBoxItem Content="工作区 + 边距内缩" Tag="Inset" />
-                            <ComboBoxItem Content="自定义矩形" Tag="CustomRect" />
                         </ComboBox>
 
                         <Grid x:Name="InsetMarginsPanel" Margin="0,0,0,16">
