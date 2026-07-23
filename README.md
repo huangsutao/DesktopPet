@@ -1,8 +1,11 @@
 # DesktopPet
 
+**中文** | [English](README.en.md)
+
 基于 **WPF + Spine** 的 Windows 桌面宠物。无边框透明置顶窗口，播放 Spine 骨骼动画，支持拖拽、点击互动、自主走动与睡眠。
 
 > **现状说明：**主流程基本能跑，但仍有瑕疵与未打磨之处，自行AI解决，请勿当作成品软件预期。
+
 ## 截图
 
 桌面宠物：
@@ -51,6 +54,10 @@ dotnet run --project DesktopPet.csproj
 也可在 Visual Studio 2022 中打开 `DesktopPet.sln`，还原 NuGet 后按 F5 运行。
 
 托盘菜单可切换形象、开关点击穿透、打开设置。用户设置保存在 `%AppData%/DesktopPet/settings.json`。
+
+### 发布包
+
+推送 `v*` 标签后，GitHub **Releases** 会自动发布 Windows x64 自包含 zip。下载解压后运行 `DesktopPet.exe` 即可。
 
 ## 资源放置
 
