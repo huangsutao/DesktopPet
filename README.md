@@ -129,4 +129,13 @@ WPF 工程已在 `.csproj` 中排除 `ColorMono.cs`（MonoGame/XNA）和 `ColorU
 
 ## License
 
-待定
+本项目**自有代码与文档**以 [MIT License](LICENSE) 开源（Copyright © 2026 Sutao）。
+
+MIT 仅覆盖本仓库原创部分，例如 `Core/`、`UI/`、`Services/`、`Spine/`、`App.*`、`MainWindow.*` 及工程配置等，**不包含**下列第三方内容：
+
+| 成分 | 许可 |
+|------|------|
+| [`ThirdParty/SpineCSharp`](ThirdParty/SpineCSharp) | [Spine Runtimes License](https://esotericsoftware.com/spine-runtimes-license)（关联 [Spine Editor License](https://esotericsoftware.com/spine-editor-license)）。再分发须保留版权与许可声明；将 Runtime 集成到产品时，终端用户通常需自备 Spine Editor 授权。 |
+| [`Assets/Pets`](Assets/Pets) 示例形象 | 来自 Esoteric Software 官方 Spine examples。多数示例（如 default / alien / stretchyman）图片可随各目录 `license.txt` 再分发，**禁止任何商业用途**；**Hero**（© XDTech）仅供演示，**不得再分发或作为衍生作品基础**。 |
+
+使用、分发或修改本仓库时，请同时遵守 MIT 与上述第三方条款。若用于商业产品，请更换自有 Spine 素材，并自行确认 Spine Runtime 授权是否满足你的场景。
