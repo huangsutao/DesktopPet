@@ -20,6 +20,8 @@ public partial class App : System.Windows.Application
         _settings = new SettingsService();
         _settings.Load();
 
+        LocalizationService.Instance.Initialize(_settings.Config.UiLanguage);
+
         var window = new MainWindow();
         window.AttachSettings(_settings);
         window.Topmost = _settings.Config.Topmost;

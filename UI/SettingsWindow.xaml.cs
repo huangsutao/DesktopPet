@@ -49,6 +49,7 @@ public partial class SettingsWindow : Window
     private void LoadFromConfig()
     {
         var cfg = _settings.Config;
+        FillLanguageCombo(cfg.UiLanguage);
         CurrentPetText.Text = cfg.PetName;
         ScaleSlider.Value = Math.Clamp(cfg.Scale, ScaleSlider.Minimum, ScaleSlider.Maximum);
         ScaleValueText.Text = ScaleSlider.Value.ToString("0.00", CultureInfo.InvariantCulture);
@@ -83,6 +84,34 @@ public partial class SettingsWindow : Window
         AiCountryBox.Text = ai.Country;
         AiCityBox.Text = ai.City;
         UpdateAiParamsVisibility();
+    }
+
+    private void FillLanguageCombo(string? selectedCode)
+    {
+        LocalizationService.Instance.RefreshAvailableLanguages();
+        LanguageCombo.Items.Clear();
+        var selected = 0;
+        var i = 0;
+        foreach (var locale in LocalizationService.Instance.AvailableLanguages)
+        {
+            var item = new ComboBoxItem
+            {
+                Content = $"{locale.DisplayName} ({locale.Code})",
+                Tag = locale.Code,
+            };
+            LanguageCombo.Items.Add(item);
+            if (string.Equals(locale.Code, selectedCode, StringComparison.OrdinalIgnoreCase))
+            {
+                selected = i;
+            }
+
+            i++;
+        }
+
+        if (LanguageCombo.Items.Count > 0)
+        {
+            LanguageCombo.SelectedIndex = selected;
+        }
     }
 
     private void SelectWalkMode(WalkAreaMode mode)
@@ -163,6 +192,14 @@ public partial class SettingsWindow : Window
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         var cfg = _settings.Config;
+        if (LanguageCombo.SelectedItem is ComboBoxItem langItem &&
+            langItem.Tag is string langCode &&
+            !string.IsNullOrWhiteSpace(langCode))
+        {
+            cfg.UiLanguage = langCode;
+            LocalizationService.Instance.ApplyLanguage(langCode);
+        }
+
         cfg.Scale = ScaleSlider.Value;
         cfg.Topmost = TopmostCheck.IsChecked == true;
         cfg.ClickThrough = ClickThroughCheck.IsChecked == true;

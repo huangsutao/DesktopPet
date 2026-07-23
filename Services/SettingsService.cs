@@ -51,6 +51,11 @@ public sealed class SettingsService
                 Config.Sleep = SleepConfig.Normalize(Config.Sleep);
                 Config.Bubble = BubbleConfig.Normalize(Config.Bubble);
                 Config.Ai = AiConfig.Normalize(Config.Ai);
+                if (string.IsNullOrWhiteSpace(Config.UiLanguage))
+                {
+                    Config.UiLanguage = "zh-CN";
+                }
+
                 var migrated = false;
                 // v2/v3: 官方示例默认尺寸统一为 0.25
                 if (Config.ConfigVersion < 3)

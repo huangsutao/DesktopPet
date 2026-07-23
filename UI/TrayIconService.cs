@@ -27,6 +27,7 @@ public sealed class TrayIconService : IDisposable
         _window = window;
         _settings = settings;
         _settings.Changed += OnSettingsChanged;
+        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
     }
 
     public void Initialize()
@@ -51,6 +52,7 @@ public sealed class TrayIconService : IDisposable
     public void Dispose()
     {
         _settings.Changed -= OnSettingsChanged;
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
 
         if (_notifyIcon is not null)
         {
@@ -64,17 +66,43 @@ public sealed class TrayIconService : IDisposable
         _icon = null;
     }
 
+    private void OnLanguageChanged()
+    {
+        var app = Application.Current;
+        if (app?.Dispatcher is not null && !app.Dispatcher.CheckAccess())
+        {
+            app.Dispatcher.BeginInvoke(RebuildMenu);
+            return;
+        }
+
+        RebuildMenu();
+    }
+
+    private void RebuildMenu()
+    {
+        if (_notifyIcon is null)
+        {
+            return;
+        }
+
+        var old = _notifyIcon.ContextMenuStrip;
+        _notifyIcon.ContextMenuStrip = BuildMenu();
+        old?.Dispose();
+        _notifyIcon.Text = BuildTrayText();
+    }
+
     private ContextMenuStrip BuildMenu()
     {
+        var L = LocalizationService.Instance;
         var menu = new ContextMenuStrip();
         menu.Opening += (_, _) => IsMenuOpen = true;
         menu.Closed += (_, _) => IsMenuOpen = false;
-        menu.Items.Add("显示", null, (_, _) => ShowWindow());
-        menu.Items.Add("隐藏", null, (_, _) => HideWindow());
+        menu.Items.Add(L.Get("Tray.Show"), null, (_, _) => ShowWindow());
+        menu.Items.Add(L.Get("Tray.Hide"), null, (_, _) => HideWindow());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("设置", null, (_, _) => OpenSettings());
+        menu.Items.Add(L.Get("Tray.Settings"), null, (_, _) => OpenSettings());
 
-        _clickThroughMenu = new ToolStripMenuItem("点击穿透")
+        _clickThroughMenu = new ToolStripMenuItem(L.Get("Tray.ClickThrough"))
         {
             CheckOnClick = true,
             Checked = _settings.Config.ClickThrough,
@@ -82,13 +110,13 @@ public sealed class TrayIconService : IDisposable
         _clickThroughMenu.Click += (_, _) => ToggleClickThrough();
         menu.Items.Add(_clickThroughMenu);
 
-        _switchPetMenu = new ToolStripMenuItem("切换形象");
+        _switchPetMenu = new ToolStripMenuItem(L.Get("Tray.SwitchPet"));
         RebuildSwitchPetMenu();
         menu.Items.Add(_switchPetMenu);
 
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("关于", null, (_, _) => ShowAbout());
-        menu.Items.Add("退出", null, (_, _) => ExitApp());
+        menu.Items.Add(L.Get("Tray.About"), null, (_, _) => ShowAbout());
+        menu.Items.Add(L.Get("Tray.Exit"), null, (_, _) => ExitApp());
         return menu;
     }
 
@@ -114,7 +142,8 @@ public sealed class TrayIconService : IDisposable
         var pets = PetCatalog.ListPets();
         if (pets.Count == 0)
         {
-            _switchPetMenu.DropDownItems.Add(new ToolStripMenuItem("（未找到可用形象）") { Enabled = false });
+            _switchPetMenu.DropDownItems.Add(
+                new ToolStripMenuItem(LocalizationService.Instance.Get("Tray.NoPets")) { Enabled = false });
             return;
         }
 
@@ -191,19 +220,10 @@ public sealed class TrayIconService : IDisposable
 
     private static void ShowAbout()
     {
+        var L = LocalizationService.Instance;
         System.Windows.MessageBox.Show(
-            "DesktopPet\n" +
-            "基于 WPF + Spine 的桌面宠物。\n\n" +
-            "素材来源：\n" +
-            "形象资源来自 Esoteric Software 官方 Spine 示例仓库（spine-runtimes / examples），" +
-            "版权归原作者所有。多数示例图片可随 license.txt 再分发，但不得用于任何商业用途；" +
-            "其中 Hero 示例（© XDTech）仅供演示，不得再分发或作为衍生作品基础。\n" +
-            "详情见各 Assets/Pets/*/license.txt。\n\n" +
-            "运行时协议：\n" +
-            "集成的 spine-csharp 遵循 Spine Runtimes License Agreement" +
-            "（需遵守 Spine Editor 许可相关条款，再分发须保留版权与许可声明）。\n" +
-            "https://esotericsoftware.com/spine-editor-license",
-            "关于",
+            L.Get("About.Body"),
+            L.Get("About.Title"),
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }

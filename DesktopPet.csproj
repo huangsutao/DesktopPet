@@ -22,6 +22,9 @@
     <None Update="pet-animations.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Locales\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <!-- 方案 B：官方 src 在 ThirdParty/SpineCSharp；WPF 只用 ColorOther，排除 Unity/MonoGame 专用文件 -->

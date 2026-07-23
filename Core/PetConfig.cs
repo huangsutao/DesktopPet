@@ -13,6 +13,9 @@ public sealed class PetConfig
 
     public bool ClickThrough { get; set; }
 
+    /// <summary>UI language code matching Locales/{code}.json (e.g. zh-CN, en).</summary>
+    public string UiLanguage { get; set; } = "zh-CN";
+
     public WalkAreaConfig WalkArea { get; set; } = new();
 
     public AutonomyConfig Autonomy { get; set; } = new();
