@@ -193,7 +193,7 @@
 
                             <TextBlock Text="模型 ID" FontWeight="SemiBold" Margin="0,0,0,4" />
                             <TextBox x:Name="AiModelIdBox" Margin="0,0,0,4" />
-                            <TextBlock Text="角色提示词写在程序目录 pet-animations.json 的 aiRolePrompt 字段。"
+                            <TextBlock Text="角色提示词写在程序目录 pet-animations.json 的 aiRolePrompt 字段，修改后需重启程序才生效。"
                                        Foreground="Gray"
                                        FontSize="11"
                                        TextWrapping="Wrap" />

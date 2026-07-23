@@ -192,7 +192,17 @@ public sealed class TrayIconService : IDisposable
     private static void ShowAbout()
     {
         System.Windows.MessageBox.Show(
-            "DesktopPet\n基于 WPF + Spine 的桌面宠物。",
+            "DesktopPet\n" +
+            "基于 WPF + Spine 的桌面宠物。\n\n" +
+            "素材来源：\n" +
+            "形象资源来自 Esoteric Software 官方 Spine 示例仓库（spine-runtimes / examples），" +
+            "版权归原作者所有。多数示例图片可随 license.txt 再分发，但不得用于任何商业用途；" +
+            "其中 Hero 示例（© XDTech）仅供演示，不得再分发或作为衍生作品基础。\n" +
+            "详情见各 Assets/Pets/*/license.txt。\n\n" +
+            "运行时协议：\n" +
+            "集成的 spine-csharp 遵循 Spine Runtimes License Agreement" +
+            "（需遵守 Spine Editor 许可相关条款，再分发须保留版权与许可声明）。\n" +
+            "https://esotericsoftware.com/spine-editor-license",
             "关于",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
