@@ -670,7 +670,17 @@ public partial class MainWindow : Window
         var bubble = BubbleConfig.Normalize(_settings?.Config.Bubble);
         var ai = AiConfig.Normalize(_settings?.Config.Ai);
         _bubbles.Enabled = bubble.Enabled;
-        _bubbles.TryGetAiLineAsync = bubble.Enabled && ai.IsReady
+
+        // 未启用气泡时不挂 AI 回调，避免天气/接口被调度到。
+        if (!bubble.Enabled)
+        {
+            _bubbles.TryGetAiLineAsync = null;
+            _bubbles.Interrupt();
+            HideSpeechBubbleImmediate();
+            return;
+        }
+
+        _bubbles.TryGetAiLineAsync = ai.IsReady
             ? async ct =>
             {
                 var userPrompt = await AiPromptContextBuilder.BuildBubbleUserPromptAsync(ai, ct)
@@ -683,12 +693,6 @@ public partial class MainWindow : Window
                     .ConfigureAwait(false);
             }
             : null;
-
-        if (!bubble.Enabled)
-        {
-            _bubbles.Interrupt();
-            HideSpeechBubbleImmediate();
-        }
     }
 
     private bool ResizeKeepingBottomCenter(double newW, double newH)

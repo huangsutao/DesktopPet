@@ -19,6 +19,7 @@ public sealed class SpeechBubbleScheduler
     private bool _fetching;
     private int _generation;
     private int _lastIndex = -1;
+    private CancellationTokenSource? _fetchCts;
 
     public event Action<string>? RequestShow;
     public event Action? RequestHide;
@@ -28,6 +29,7 @@ public sealed class SpeechBubbleScheduler
 
     /// <summary>
     /// Optional AI line provider. Return null/empty to fall back to local config lines.
+    /// Only invoked when <see cref="Enabled"/> is true.
     /// </summary>
     public Func<CancellationToken, Task<string?>>? TryGetAiLineAsync { get; set; }
 
@@ -44,6 +46,7 @@ public sealed class SpeechBubbleScheduler
 
     public void Reset()
     {
+        CancelFetch();
         _generation++;
         _fetching = false;
         _showing = false;
@@ -53,9 +56,11 @@ public sealed class SpeechBubbleScheduler
     /// <summary>
     /// Hide if currently showing. Does not reset the idle gap when already hidden
     /// (otherwise frequent Walk would keep postponing bubbles forever).
+    /// Also cancels any in-flight AI/weather request.
     /// </summary>
     public void Interrupt()
     {
+        CancelFetch();
         _generation++;
         _fetching = false;
         if (!_showing)
@@ -85,6 +90,7 @@ public sealed class SpeechBubbleScheduler
             return;
         }
 
+        // AI is only for bubbles: with bubbles off we never get here; with AI off, provider is null.
         if (_lines.Count == 0 && TryGetAiLineAsync is null)
         {
             return;
@@ -116,24 +122,37 @@ public sealed class SpeechBubbleScheduler
 
         try
         {
-            if (TryGetAiLineAsync is not null)
+            // Bubble must stay enabled; otherwise skip AI/weather entirely.
+            var aiProvider = Enabled ? TryGetAiLineAsync : null;
+            if (aiProvider is not null)
             {
                 try
                 {
-                    using var cts = new CancellationTokenSource(AiTimeout);
-                    var ai = await TryGetAiLineAsync(cts.Token).ConfigureAwait(false);
+                    using var timeoutCts = new CancellationTokenSource(AiTimeout);
+                    _fetchCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token);
+                    var token = _fetchCts.Token;
+                    var ai = await aiProvider(token).ConfigureAwait(false);
                     if (!string.IsNullOrWhiteSpace(ai))
                     {
                         message = ai.Trim();
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    // Interrupted or timed out — keep local fallback only if still current.
+                }
                 catch
                 {
-                    // Keep local fallback on any AI failure/timeout.
+                    // Keep local fallback on any AI failure.
+                }
+                finally
+                {
+                    _fetchCts?.Dispose();
+                    _fetchCts = null;
                 }
             }
 
-            if (generation != _generation)
+            if (generation != _generation || !Enabled)
             {
                 return;
             }
@@ -154,6 +173,18 @@ public sealed class SpeechBubbleScheduler
             {
                 _fetching = false;
             }
+        }
+    }
+
+    private void CancelFetch()
+    {
+        try
+        {
+            _fetchCts?.Cancel();
+        }
+        catch
+        {
+            // Ignore dispose races.
         }
     }
 
