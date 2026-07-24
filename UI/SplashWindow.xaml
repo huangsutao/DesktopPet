@@ -1,0 +1,86 @@
+<Window x:Class="DesktopPet.UI.SplashWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DesktopPet"
+        Width="220"
+        Height="220"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowStartupLocation="CenterScreen"
+        ShowActivated="False">
+    <Grid>
+        <Ellipse x:Name="Halo"
+                 Width="180"
+                 Height="180"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 Fill="#40D4B483" />
+
+        <Border Width="120"
+                Height="120"
+                CornerRadius="60"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                BorderThickness="0">
+            <Border.Background>
+                <RadialGradientBrush GradientOrigin="0.35,0.3" Center="0.5,0.5" RadiusX="0.8" RadiusY="0.8">
+                    <GradientStop Color="#FFFBF5" Offset="0" />
+                    <GradientStop Color="#F3E6D2" Offset="0.55" />
+                    <GradientStop Color="#E8D4B0" Offset="1" />
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <Ellipse x:Name="Core"
+                 Width="48"
+                 Height="48"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#FFF6E4" Offset="0" />
+                    <GradientStop Color="#E8C985" Offset="0.55" />
+                    <GradientStop Color="#C9A86A" Offset="1" />
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
+
+        <Grid.Triggers>
+            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                <BeginStoryboard>
+                    <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                        <DoubleAnimation Storyboard.TargetName="Halo"
+                                         Storyboard.TargetProperty="Opacity"
+                                         From="0.28"
+                                         To="0.75"
+                                         Duration="0:0:1.1" />
+                        <DoubleAnimation Storyboard.TargetName="Halo"
+                                         Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                         From="0.85"
+                                         To="1.1"
+                                         Duration="0:0:1.1" />
+                        <DoubleAnimation Storyboard.TargetName="Halo"
+                                         Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                         From="0.85"
+                                         To="1.1"
+                                         Duration="0:0:1.1" />
+                        <DoubleAnimation Storyboard.TargetName="Core"
+                                         Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                         From="0.92"
+                                         To="1.08"
+                                         Duration="0:0:0.9" />
+                        <DoubleAnimation Storyboard.TargetName="Core"
+                                         Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                         From="0.92"
+                                         To="1.08"
+                                         Duration="0:0:0.9" />
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Grid.Triggers>
+    </Grid>
+</Window>

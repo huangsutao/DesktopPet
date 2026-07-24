@@ -46,6 +46,10 @@ public partial class MainWindow : Window
     private double _walkLastDistance = double.MaxValue;
     private SleepConfig _sleepConfig = SleepConfig.CreateDefault();
     private double _secondsSinceUserInteraction;
+    private bool _readyRaised;
+
+    /// <summary>Fired once after first pet load attempt (success or fail), for splash dismissal.</summary>
+    public event Action? Ready;
 
     public MainWindow()
     {
@@ -99,6 +103,19 @@ public partial class MainWindow : Window
         {
             StartRendering();
         }
+
+        RaiseReadyOnce();
+    }
+
+    private void RaiseReadyOnce()
+    {
+        if (_readyRaised)
+        {
+            return;
+        }
+
+        _readyRaised = true;
+        Ready?.Invoke();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e) => StopRendering();
