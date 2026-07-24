@@ -52,6 +52,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        IsVisibleChanged += OnIsVisibleChanged;
         Closed += (_, _) => Cleanup();
         _stateMachine.StateChanged += OnPetStateChanged;
         _runtime.AnimationCompleted += OnAnimationCompleted;
@@ -94,11 +95,45 @@ public partial class MainWindow : Window
         ClampToWorkingArea();
         ReloadPet();
         ApplyClickThrough();
-        StartRendering();
+        if (IsVisible)
+        {
+            StartRendering();
+        }
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e) => StopRendering();
 
+    /// <summary>
+    /// 托盘「隐藏」后窗口不可见：停渲染、停自主/睡眠、取消气泡与进行中的 AI/天气请求。
+    /// </summary>
+    private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (IsVisible)
+        {
+            ResumeFromHidden();
+        }
+        else
+        {
+            PauseWhileHidden();
+        }
+    }
+
+    private void PauseWhileHidden()
+    {
+        InterruptAutonomyForUser(wakeIfSleeping: false);
+        _bubbles.TryGetAiLineAsync = null;
+        _bubbles.Interrupt();
+        HideSpeechBubbleImmediate();
+        StopRendering();
+    }
+
+    private void ResumeFromHidden()
+    {
+        ApplyBubbleSettings();
+        _bubbles.Reset();
+        NoteUserInteraction();
+        StartRendering();
+    }
     private void OnSettingsChanged()
     {
         RunOnUi(() =>
@@ -496,6 +531,12 @@ public partial class MainWindow : Window
 
     private void OnRendering(object? sender, EventArgs e)
     {
+        // 托盘隐藏时不应再跑逻辑（双重保险；正常路径已 StopRendering）
+        if (!IsVisible)
+        {
+            return;
+        }
+
         if (!_runtime.IsLoaded || _runtime.Skeleton is null)
         {
             return;
@@ -664,6 +705,11 @@ public partial class MainWindow : Window
 
     private void OnBubbleRequestShow(string message)
     {
+        if (!IsVisible)
+        {
+            return;
+        }
+
         RunOnUi(() => SpeechBubble.Show(message));
     }
 
@@ -681,6 +727,17 @@ public partial class MainWindow : Window
     {
         var bubble = BubbleConfig.Normalize(_settings?.Config.Bubble);
         var ai = AiConfig.Normalize(_settings?.Config.Ai);
+
+        // 窗口隐藏时不挂 AI、不调度气泡（含天气请求）。
+        if (!IsVisible)
+        {
+            _bubbles.Enabled = false;
+            _bubbles.TryGetAiLineAsync = null;
+            _bubbles.Interrupt();
+            HideSpeechBubbleImmediate();
+            return;
+        }
+
         _bubbles.Enabled = bubble.Enabled;
 
         // 未启用气泡时不挂 AI 回调，避免天气/接口被调度到。
