@@ -28,7 +28,9 @@ public partial class App : System.Windows.Application
 
         _splash = new SplashWindow();
         _splashShownUtc = DateTime.UtcNow;
+        _splash.PlaceAtBottomRight();
         _splash.Show();
+        _splash.PlaceAtBottomRight();
         DoEvents();
 
         Dispatcher.BeginInvoke(ContinueStartup, DispatcherPriority.Loaded);
