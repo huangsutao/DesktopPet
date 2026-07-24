@@ -36,7 +36,7 @@ public static class PetAnimationMap
         ?? (data.Animations.Count > 0 ? data.Animations.Items[0].Name : null);
 
     /// <summary>
-    /// Speech bubble lines: Locales/_bubbleLines → pet override → root pet-animations → built-in.
+    /// Speech bubble lines: Locales/_bubbleLines → optional pet-animations override → built-in.
     /// </summary>
     public static IReadOnlyList<string> GetBubbleLines(string? petFolderName = null)
     {
@@ -73,7 +73,7 @@ public static class PetAnimationMap
     }
 
     /// <summary>
-    /// AI system role: Locales Ai.RolePrompt → pet-animations.json → built-in.
+    /// AI system role: Locales Ai.RolePrompt → optional pet-animations → built-in.
     /// </summary>
     public static string GetAiRolePrompt()
     {

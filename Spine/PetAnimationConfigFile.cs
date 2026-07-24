@@ -5,10 +5,10 @@ public sealed class PetAnimationConfigFile
 {
     public bool IncludeAllNonIdleOnClick { get; set; } = true;
 
-    /// <summary>Default speech-bubble lines (fallback for all pets).</summary>
+    /// <summary>Optional legacy fallback; prefer Locales <c>_bubbleLines</c>.</summary>
     public List<string> BubbleLines { get; set; } = [];
 
-    /// <summary>System role prompt used when calling the AI chat API for bubbles.</summary>
+    /// <summary>Optional legacy fallback; prefer Locales <c>Ai.RolePrompt</c>.</summary>
     public string AiRolePrompt { get; set; } = string.Empty;
 
     public PetActionCandidates Defaults { get; set; } = new();

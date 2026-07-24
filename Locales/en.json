@@ -85,7 +85,7 @@
   "Settings.Ai.Country": "Country/region",
   "Settings.Ai.City": "City",
   "Settings.Ai.Location.Hint": "If a city is set, the app tries to fetch local weather for the AI. “Hot topics” rely on the model—there is no live news API.",
-  "Settings.Ai.Prompt.Hint": "Role prompt and local bubble lines live in Locales (Ai.RolePrompt / _bubbleLines). pet-animations.json is only a fallback.",
+  "Settings.Ai.Prompt.Hint": "Role prompt and local bubble lines live in Locales (Ai.RolePrompt / _bubbleLines).",
   "Settings.Cancel": "Cancel",
   "Settings.Save": "Save",
   "Tray.Show": "Show",

@@ -85,7 +85,7 @@
   "Settings.Ai.Country": "国家/地区",
   "Settings.Ai.City": "城市",
   "Settings.Ai.Location.Hint": "填写城市后会尝试查询当地天气并传给 AI；热点话题由模型结合日期自行把握，请勿指望实时新闻接口。",
-  "Settings.Ai.Prompt.Hint": "角色提示词、气泡本地文案写在 Locales 语言包（Ai.RolePrompt / _bubbleLines）。pet-animations.json 仅作回退。",
+  "Settings.Ai.Prompt.Hint": "角色提示词、气泡本地文案写在 Locales 语言包（Ai.RolePrompt / _bubbleLines）。",
   "Settings.Cancel": "取消",
   "Settings.Save": "保存",
   "Tray.Show": "显示",
