@@ -114,6 +114,26 @@ public sealed class SpineRuntimeHost : IDisposable
         _animationController.PlayRandomAction(AnimationState, SkeletonData, LoadedPetName);
     }
 
+    public void PlayNamed(string animationName, bool loop = false)
+    {
+        if (AnimationState is null || string.IsNullOrWhiteSpace(animationName))
+        {
+            return;
+        }
+
+        _animationController.Play(AnimationState, animationName, loop);
+    }
+
+    public IReadOnlyList<string> ListClickActions()
+    {
+        if (SkeletonData is null)
+        {
+            return [];
+        }
+
+        return PetAnimationMap.ListAvailable(SkeletonData, PetAction.Click, LoadedPetName);
+    }
+
     public void SetFacing(bool faceRight)
     {
         if (Skeleton is null)

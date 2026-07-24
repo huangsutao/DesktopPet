@@ -37,6 +37,9 @@ public partial class MainWindow : Window
     private bool _mouseCaptured;
 
     private bool _autonomyAction;
+    private string? _pendingNamedAction;
+    private bool _contextMenuOpen;
+    private bool _hoverIdleOverride;
     private bool _preferRunWalk;
     private bool _hasWalkTarget;
     private double _walkTargetLeft;
@@ -184,6 +187,8 @@ public partial class MainWindow : Window
         try
         {
             CancelWalkMovement();
+            _pendingNamedAction = null;
+            _hoverIdleOverride = false;
             _runtime.LoadPet(petName);
             _stateMachine.Reset();
             _autonomy.Reset();
@@ -230,7 +235,15 @@ public partial class MainWindow : Window
                 break;
             case PetState.Clicked:
                 CancelWalkMovement();
-                if (_autonomyAction)
+                _hoverIdleOverride = false;
+                if (_pendingNamedAction is not null)
+                {
+                    var named = _pendingNamedAction;
+                    _pendingNamedAction = null;
+                    _runtime.PlayNamed(named);
+                    _autonomy.Interrupt();
+                }
+                else if (_autonomyAction)
                 {
                     _runtime.PlayRandomAction();
                     _autonomyAction = false;
@@ -453,6 +466,7 @@ public partial class MainWindow : Window
 
         _autonomy.Interrupt();
         _autonomyAction = false;
+        _pendingNamedAction = null;
     }
 
     private void NoteUserInteraction()
@@ -573,8 +587,11 @@ public partial class MainWindow : Window
             delta = 1f / 60f;
         }
 
-        // 置顶窗每帧改位置会卡住托盘菜单 / 设置窗，打开期间暂停位移
-        var uiOverlayOpen = SettingsWindow.IsOpen || TrayIconService.IsMenuOpen;
+        // 透明窗 IsMouseOver 不可靠（透明像素点穿）；用光标是否在窗口矩形内判断
+        var clickThrough = _settings?.Config.ClickThrough ?? false;
+        var hoverPause = !clickThrough && !_dragStarted &&
+                         (_contextMenuOpen || IsCursorOverPetWindow());
+        var uiOverlayOpen = SettingsWindow.IsOpen || TrayIconService.IsMenuOpen || _contextMenuOpen;
         if (_dragStarted)
         {
             // user drag owns movement
@@ -590,12 +607,14 @@ public partial class MainWindow : Window
                 InterruptAutonomyForUser();
             }
         }
-        else if (TrayIconService.IsMenuOpen)
+        else if (TrayIconService.IsMenuOpen || hoverPause)
         {
-            // soft-pause: keep walk target, resume after menu closes
+            // soft-pause: keep walk target, resume after leave / menu closes
+            ApplyHoverIdleOverride(hoverPause);
         }
         else
         {
+            ApplyHoverIdleOverride(false);
             _autonomy.Tick(delta);
             UpdateWalkMovement(delta);
         }
@@ -812,6 +831,150 @@ public partial class MainWindow : Window
         _dragStarted = false;
         _mouseCaptured = CaptureMouse();
         e.Handled = true;
+    }
+
+    private void Window_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (_settings?.Config.ClickThrough == true)
+        {
+            return;
+        }
+
+        NoteUserInteraction();
+    }
+
+    private void Window_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_settings?.Config.ClickThrough == true || !_runtime.IsLoaded)
+        {
+            return;
+        }
+
+        NoteUserInteraction();
+        OpenActionContextMenu();
+        e.Handled = true;
+    }
+
+    private void OpenActionContextMenu()
+    {
+        var L = LocalizationService.Instance;
+        var menu = new System.Windows.Controls.ContextMenu();
+        menu.Opened += (_, _) => _contextMenuOpen = true;
+        menu.Closed += (_, _) => _contextMenuOpen = false;
+
+        var header = new System.Windows.Controls.MenuItem
+        {
+            Header = L.Get("Main.ActionMenu.Header"),
+            IsEnabled = false,
+        };
+        menu.Items.Add(header);
+        menu.Items.Add(new System.Windows.Controls.Separator());
+
+        var actions = _runtime.ListClickActions();
+        if (actions.Count == 0)
+        {
+            menu.Items.Add(new System.Windows.Controls.MenuItem
+            {
+                Header = L.Get("Main.ActionMenu.Empty"),
+                IsEnabled = false,
+            });
+        }
+        else
+        {
+            foreach (var name in actions)
+            {
+                var animName = name;
+                var item = new System.Windows.Controls.MenuItem
+                {
+                    Header = L.GetAnimationDisplayName(animName),
+                };
+                item.Click += (_, _) => RequestNamedAction(animName);
+                menu.Items.Add(item);
+            }
+        }
+
+        ContextMenu = menu;
+        menu.IsOpen = true;
+    }
+
+    private void RequestNamedAction(string animationName)
+    {
+        if (string.IsNullOrWhiteSpace(animationName) || !_runtime.IsLoaded)
+        {
+            return;
+        }
+
+        NoteUserInteraction();
+        InterruptAutonomyForUser(wakeIfSleeping: true);
+        _autonomyAction = false;
+        _hoverIdleOverride = false;
+
+        if (_stateMachine.Current == PetState.Clicked)
+        {
+            _pendingNamedAction = null;
+            _runtime.PlayNamed(animationName);
+            return;
+        }
+
+        _pendingNamedAction = animationName;
+        if (!_stateMachine.TryClick())
+        {
+            _pendingNamedAction = null;
+        }
+    }
+
+    /// <summary>
+    /// While hovering (or action menu open), freeze walk in place with idle pose.
+    /// </summary>
+    private void ApplyHoverIdleOverride(bool active)
+    {
+        if (active)
+        {
+            if (_stateMachine.Current == PetState.Walk && !_hoverIdleOverride)
+            {
+                _hoverIdleOverride = true;
+                _runtime.PlayIdle();
+            }
+
+            return;
+        }
+
+        if (!_hoverIdleOverride)
+        {
+            return;
+        }
+
+        _hoverIdleOverride = false;
+        if (_stateMachine.Current == PetState.Walk && _hasWalkTarget)
+        {
+            _runtime.PlayWalk(_preferRunWalk);
+        }
+    }
+
+    /// <summary>
+    /// True when the OS cursor is inside this window's screen rectangle (DIP).
+    /// Preferred over <see cref="UIElement.IsMouseOver"/> for transparent pets.
+    /// </summary>
+    private bool IsCursorOverPetWindow()
+    {
+        if (!IsVisible || ActualWidth <= 0 || ActualHeight <= 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            var screen = System.Windows.Forms.Cursor.Position;
+            var local = PointFromScreen(new System.Windows.Point(screen.X, screen.Y));
+            return local.X >= 0 &&
+                   local.Y >= 0 &&
+                   local.X < ActualWidth &&
+                   local.Y < ActualHeight;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private void Window_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)

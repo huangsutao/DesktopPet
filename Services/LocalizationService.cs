@@ -119,6 +119,35 @@ public sealed class LocalizationService
         return fallback ?? key;
     }
 
+    /// <summary>
+    /// Display name for a Spine animation: <c>Anim.{normalized}</c> (spaces → '-'), else raw name.
+    /// </summary>
+    public string GetAnimationDisplayName(string animationName)
+    {
+        if (string.IsNullOrWhiteSpace(animationName))
+        {
+            return animationName;
+        }
+
+        var key = "Anim." + NormalizeAnimationKey(animationName);
+        return Get(key, animationName);
+    }
+
+    private static string NormalizeAnimationKey(string name)
+    {
+        var trimmed = name.Trim();
+        var chars = new char[trimmed.Length];
+        for (var i = 0; i < trimmed.Length; i++)
+        {
+            var ch = trimmed[i];
+            chars[i] = char.IsWhiteSpace(ch) || ch == '_'
+                ? '-'
+                : char.ToLowerInvariant(ch);
+        }
+
+        return new string(chars);
+    }
+
     /// <summary>Localized bubble lines from <c>_bubbleLines</c> in the active locale (may be empty).</summary>
     public IReadOnlyList<string> GetBubbleLines() => _bubbleLines;
 
